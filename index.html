@@ -58,18 +58,104 @@
   </script>
 
   <script>
-    // 1. Crear el mapa centrado en Santiago (puedes cambiar el centro después)
-    const map = L.map('map').setView([-33.45, -70.66], 12);
+ <script>
+  // 1. Crear el mapa
+  const map = L.map('map').setView([-33.45, -70.66], 12); // Santiago aprox.
 
-    // 2. Capa base de OpenStreetMap
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+  // 2. Capa base (OpenStreetMap)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
 
-    console.log("Mapa cargado correctamente");
-  </script>
+  // 3. Capas vacías para tus datos reales
+  const rutasLayer = L.geoJSON(null, {
+    style: {
+      color: 'red',
+      weight: 4
+    },
+    onEachFeature: function (feature, layer) {
+      if (feature.properties) {
+        layer.bindPopup(
+          `<b>Ruta reportada</b><br>
+          Ciclovía: ${feature.properties.descripcion_ciclovia || '-'}<br>
+          Problema: ${feature.properties.problema || '-'}<br>
+          Gravedad: ${feature.properties.gravedad || '-'}`
+        );
+      }
+    }
+  }).addTo(map);
 
-</body>
-</html>
+  const puntosLayer = L.geoJSON(null, {
+    pointToLayer: function (feature, latlng) {
+      return L.circleMarker(latlng, {
+        radius: 6,
+        fillColor: 'blue',
+        color: '#000',
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.8
+      });
+    },
+    onEachFeature: function (feature, layer) {
+      if (feature.properties) {
+        layer.bindPopup(
+          `<b>Punto de problema</b><br>
+          Problema: ${feature.properties.problema || '-'}<br>
+          Gravedad: ${feature.properties.gravedad || '-'}<br>
+          Comentario: ${feature.properties.comentario || '-'}`
+        );
+      }
+    }
+  }).addTo(map);
+
+  // 4. DATOS DE EJEMPLO (solo para probar el mapa)
+  //    Luego los vamos a reemplazar por los datos reales de Kobo.
+  const rutasEjemplo = {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [-70.676, -33.45],
+            [-70.66, -33.455],
+            [-70.64, -33.46]
+          ]
+        },
+        "properties": {
+          "descripcion_ciclovia": "Existe pero se corta en algunos tramos",
+          "problema": "ciclovia_interrumpida",
+          "gravedad": "Alta"
+        }
+      }
+    ]
+  };
+
+  const puntosEjemplo = {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Point",
+          "coordinates": [-70.665, -33.455]
+        },
+        "properties": {
+          "problema": "alto_flujo_vehiculos",
+          "gravedad": "Media",
+          "comentario": "Muchos autos cruzan la ciclovía sin mirar."
+        }
+      }
+    ]
+  };
+
+  // 5. Agregar los datos de ejemplo a las capas
+  rutasLayer.addData(rutasEjemplo);
+  puntosLayer.addData(puntosEjemplo);
+
+  // 6. (LUEGO AQUÍ VENDRÁ LA CONEXIÓN A KOBO / API)
+  // const API_URL = "AQUI_VA_LA_URL_DE_TU_API";
+  console.log("Mapa con datos de ejemplo cargado correctamente :)");
+</script>
 
