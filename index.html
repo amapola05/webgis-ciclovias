@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <title>WebGIS ciclovías – Chile</title>
 
-  <!-- Hacer que use todo el alto de la pantalla -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Estilos de Leaflet -->
+  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -25,7 +24,7 @@
 
     #map {
       width: 100%;
-      height: 100vh; /* mapa ocupa toda la ventana */
+      height: 100vh; 
     }
 
     .titulo {
@@ -50,77 +49,74 @@
 
   <div id="map"></div>
 
-  <!-- Script de Leaflet -->
+  <!-- Leaflet JS -->
   <script
     src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin="">
   </script>
 
+  <!-- TU SCRIPT CORRECTO (SOLO UNO) -->
   <script>
- <script>
-   <script>
-  // 1. Crear el mapa
-  const map = L.map('map').setView([-33.45, -70.66], 12); // Santiago aprox.
+    // 1. Crear el mapa
+    const map = L.map('map').setView([-33.45, -70.66], 12);
 
-  // 2. Capa base (OpenStreetMap)
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-  }).addTo(map);
+    // 2. Capa base
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(map);
 
-  // 3. Capas vacías para tus datos reales
-  const rutasLayer = L.geoJSON(null, {
-    style: {
-      color: '#00ffff', // celeste fosforescente
-      weight: 8
-    },
-    onEachFeature: function (feature, layer) {
-      if (feature.properties) {
-        layer.bindPopup(
-          `<b>Ruta reportada</b><br>
-          Ciclovía: ${feature.properties.descripcion_ciclovia || '-'}<br>
-          Problema: ${feature.properties.problema || '-'}<br>
-          Gravedad: ${feature.properties.gravedad || '-'}`  
-        );
+    // 3. Capas vacías (rutas y puntos)
+    const rutasLayer = L.geoJSON(null, {
+      style: {
+        color: '#00ffff',
+        weight: 8
+      },
+      onEachFeature: function (feature, layer) {
+        if (feature.properties) {
+          layer.bindPopup(`
+            <b>Ruta reportada</b><br>
+            Ciclovía: ${feature.properties.descripcion_ciclovia || '-'}<br>
+            Problema: ${feature.properties.problema || '-'}<br>
+            Gravedad: ${feature.properties.gravedad || '-'}
+          `);
+        }
       }
-    }
-  }).addTo(map);
+    }).addTo(map);
 
-  const puntosLayer = L.geoJSON(null, {
-    pointToLayer: function (feature, latlng) {
-      return L.circleMarker(latlng, {
-        radius: 10,
-        fillColor: 'yellow',
-        color: 'black',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9
-      });
-    },
-    onEachFeature: function (feature, layer) {
-      if (feature.properties) {
-        layer.bindPopup(
-          `<b>Punto de problema</b><br>
-          Problema: ${feature.properties.problema || '-'}<br>
-          Gravedad: ${feature.properties.gravedad || '-'}<br>
-          Comentario: ${feature.properties.comentario || '-'}`  
-        );
+    const puntosLayer = L.geoJSON(null, {
+      pointToLayer: function (feature, latlng) {
+        return L.circleMarker(latlng, {
+          radius: 10,
+          fillColor: 'yellow',
+          color: 'black',
+          weight: 2,
+          fillOpacity: 0.9
+        });
+      },
+      onEachFeature: function (feature, layer) {
+        if (feature.properties) {
+          layer.bindPopup(`
+            <b>Punto de problema</b><br>
+            Problema: ${feature.properties.problema || '-'}<br>
+            Gravedad: ${feature.properties.gravedad || '-'}<br>
+            Comentario: ${feature.properties.comentario || '-'}
+          `);
+        }
       }
-    }
-  }).addTo(map);
+    }).addTo(map);
 
-  // 4. DATOS DE EJEMPLO (solo para probar el mapa)
-  const rutasEjemplo = {
-    "type": "FeatureCollection",
-    "features": [
-      {
+    // 4. Datos de ejemplo
+    const rutasEjemplo = {
+      "type": "FeatureCollection",
+      "features": [{
         "type": "Feature",
         "geometry": {
           "type": "LineString",
           "coordinates": [
             [-70.676, -33.45],
-            [-70.66,  -33.455],
-            [-70.64,  -33.46]
+            [-70.66, -33.455],
+            [-70.64, -33.46]
           ]
         },
         "properties": {
@@ -128,14 +124,12 @@
           "problema": "ciclovia_interrumpida",
           "gravedad": "Alta"
         }
-      }
-    ]
-  };
+      }]
+    };
 
-  const puntosEjemplo = {
-    "type": "FeatureCollection",
-    "features": [
-      {
+    const puntosEjemplo = {
+      "type": "FeatureCollection",
+      "features": [{
         "type": "Feature",
         "geometry": {
           "type": "Point",
@@ -146,19 +140,17 @@
           "gravedad": "Media",
           "comentario": "Muchos autos cruzan la ciclovía sin mirar."
         }
-      }
-    ]
-  };
+      }]
+    };
 
-  // 5. Agregar los datos de ejemplo a las capas
-  rutasLayer.addData(rutasEjemplo);
-  puntosLayer.addData(puntosEjemplo);
+    // 5. Agregar datos al mapa
+    rutasLayer.addData(rutasEjemplo);
+    puntosLayer.addData(puntosEjemplo);
 
-  // 6. Centrar el mapa exactamente en los datos
-  const grupo = L.featureGroup([rutasLayer, puntosLayer]);
-  map.fitBounds(grupo.getBounds(), { padding: [50, 50] });
+    // 6. Ajustar zoom automáticamente
+    const grupo = L.featureGroup([rutasLayer, puntosLayer]);
+    map.fitBounds(grupo.getBounds(), { padding: [50, 50] });
+  </script>
 
-  console.log("Mapa con datos de ejemplo cargado correctamente :)");
-</script>
-
-
+</body>
+</html>
