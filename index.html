@@ -59,6 +59,7 @@
 
   <script>
  <script>
+   <script>
   // 1. Crear el mapa
   const map = L.map('map').setView([-33.45, -70.66], 12); // Santiago aprox.
 
@@ -70,8 +71,8 @@
   // 3. Capas vacías para tus datos reales
   const rutasLayer = L.geoJSON(null, {
     style: {
-      color: 'red',
-      weight: 4
+      color: '#00ffff', // celeste fosforescente
+      weight: 8
     },
     onEachFeature: function (feature, layer) {
       if (feature.properties) {
@@ -79,7 +80,7 @@
           `<b>Ruta reportada</b><br>
           Ciclovía: ${feature.properties.descripcion_ciclovia || '-'}<br>
           Problema: ${feature.properties.problema || '-'}<br>
-          Gravedad: ${feature.properties.gravedad || '-'}`
+          Gravedad: ${feature.properties.gravedad || '-'}`  
         );
       }
     }
@@ -88,12 +89,12 @@
   const puntosLayer = L.geoJSON(null, {
     pointToLayer: function (feature, latlng) {
       return L.circleMarker(latlng, {
-        radius: 6,
-        fillColor: 'blue',
-        color: '#000',
-        weight: 1,
+        radius: 10,
+        fillColor: 'yellow',
+        color: 'black',
+        weight: 2,
         opacity: 1,
-        fillOpacity: 0.8
+        fillOpacity: 0.9
       });
     },
     onEachFeature: function (feature, layer) {
@@ -102,14 +103,13 @@
           `<b>Punto de problema</b><br>
           Problema: ${feature.properties.problema || '-'}<br>
           Gravedad: ${feature.properties.gravedad || '-'}<br>
-          Comentario: ${feature.properties.comentario || '-'}`
+          Comentario: ${feature.properties.comentario || '-'}`  
         );
       }
     }
   }).addTo(map);
 
   // 4. DATOS DE EJEMPLO (solo para probar el mapa)
-  //    Luego los vamos a reemplazar por los datos reales de Kobo.
   const rutasEjemplo = {
     "type": "FeatureCollection",
     "features": [
@@ -119,8 +119,8 @@
           "type": "LineString",
           "coordinates": [
             [-70.676, -33.45],
-            [-70.66, -33.455],
-            [-70.64, -33.46]
+            [-70.66,  -33.455],
+            [-70.64,  -33.46]
           ]
         },
         "properties": {
@@ -154,8 +154,11 @@
   rutasLayer.addData(rutasEjemplo);
   puntosLayer.addData(puntosEjemplo);
 
-  // 6. (LUEGO AQUÍ VENDRÁ LA CONEXIÓN A KOBO / API)
-  // const API_URL = "AQUI_VA_LA_URL_DE_TU_API";
+  // 6. Centrar el mapa exactamente en los datos
+  const grupo = L.featureGroup([rutasLayer, puntosLayer]);
+  map.fitBounds(grupo.getBounds(), { padding: [50, 50] });
+
   console.log("Mapa con datos de ejemplo cargado correctamente :)");
 </script>
+
 
