@@ -5,23 +5,13 @@
   <title>WebGIS ciclovías Chile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
-
-  <!-- Leaflet.draw CSS (para dibujar la ruta) -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
 
   <style>
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
+      font-family: system-ui, sans-serif;
       background: #f5f6fa;
     }
 
@@ -62,8 +52,8 @@
     #mapProblema {
       width: 100%;
       height: 360px;
-      border-radius: 4px;
       border: 1px solid #ccc;
+      border-radius: 4px;
     }
 
     .search-container {
@@ -77,7 +67,6 @@
       padding: 0.35rem;
       border-radius: 4px;
       border: 1px solid #ccc;
-      font-size: 0.9rem;
     }
 
     .search-container button {
@@ -86,92 +75,57 @@
       border: 1px solid #c5d7e8;
       background: #e4f0ff;
       cursor: pointer;
-      font-size: 0.9rem;
-    }
-
-    .search-container button:hover {
-      background: #d3e4ff;
     }
 
     label {
       display: block;
-      font-size: 0.9rem;
-      margin-top: 0.4rem;
-      margin-bottom: 0.15rem;
+      margin-top: 0.6rem;
+      margin-bottom: 0.2rem;
       font-weight: 600;
     }
 
     input[type="text"],
     textarea {
       width: 100%;
-      box-sizing: border-box;
-      padding: 0.35rem;
-      margin-bottom: 0.4rem;
-      border-radius: 4px;
+      padding: 0.4rem;
       border: 1px solid #ccc;
-      font-size: 0.9rem;
+      border-radius: 4px;
     }
 
     textarea {
       resize: vertical;
     }
 
-    .radio-group {
-      margin-bottom: 0.6rem;
-      font-size: 0.9rem;
-    }
-
     .radio-group label {
-      font-weight: 400;
+      font-weight: normal;
       display: block;
       margin-bottom: 0.2rem;
     }
 
     button[type="submit"] {
-      margin-top: 0.5rem;
+      margin-top: 1rem;
+      padding: 0.6rem 1rem;
       background: #26689c;
       color: white;
       border: none;
-      padding: 0.5rem 0.8rem;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.95rem;
     }
 
     button[type="submit"]:hover {
       background: #1f567f;
     }
-
-    #listaReportes {
-      font-size: 0.85rem;
-      max-height: 260px;
-      overflow-y: auto;
-      border-top: 1px solid #ddd;
-      margin-top: 0.5rem;
-      padding-top: 0.5rem;
-    }
-
-    .reporte-item {
-      border-bottom: 1px solid #eee;
-      padding: 0.3rem 0;
-    }
-
-    .reporte-item strong {
-      color: #26689c;
-    }
   </style>
 </head>
 <body>
-<h1>Análisis participativo de riesgos y necesidades de infraestructura ciclista en Chile</h1>
+<h1>Análisis participativo de infraestructura ciclista en Chile</h1>
 
 <main>
-  <!-- BLOQUE 1: RUTA -->
+
+  <!-- BLOQUE: Ruta -->
   <section class="bloque">
-    <h2>Ruta asociada al desplazamiento del ciclista</h2>
-    <p class="nota">
-      Marque en el mapa la ruta asociada al desplazamiento del ciclista, ya sea propia u observada.
-      Si estás respondiendo desde un celular y no ves bien el mapa, activa "Vista de escritorio / Modo computadora".
-    </p>
+    <h2>Ruta del desplazamiento</h2>
+    <p class="nota">Dibuja la ruta en el mapa o marca el trayecto aproximado.</p>
 
     <div class="search-container">
       <input id="searchRuta" type="text" placeholder="buscar lugar o dirección" />
@@ -180,63 +134,51 @@
     </div>
 
     <div id="mapRuta"></div>
-    <!-- Aquí guardamos la ruta en formato GeoJSON -->
-    <input type="hidden" id="rutaGeoJSON" name="rutaGeoJSON" />
+    <input type="hidden" id="rutaGeoJSON" />
   </section>
 
-  <!-- BLOQUE 2: PREGUNTAS SOBRE LA RUTA -->
+  <!-- BLOQUE: Preguntas -->
   <section class="bloque">
     <form id="reporteForm">
-      <h2>Descripción de ciclovía y problemas observados</h2>
 
-      <div class="radio-block">
-        <label>En la ruta que dibujaste, ¿cómo describirías la presencia de ciclovía?</label>
-        <div class="radio-group">
-          <label><input type="radio" name="presencia" value="No existe ciclovía" required> No existe ciclovía</label>
-          <label><input type="radio" name="presencia" value="Existe pero está incompleta"> Existe pero está incompleta / se corta en algunos tramos</label>
-          <label><input type="radio" name="presencia" value="Existe y es continua"> Existe y es continua en toda la ruta</label>
-        </div>
+      <h2>Descripción de la ciclovía</h2>
+
+      <label>Presencia de ciclovía</label>
+      <div class="radio-group">
+        <label><input type="radio" name="presencia" value="No existe ciclovía" required> No existe ciclovía</label>
+        <label><input type="radio" name="presencia" value="Existe pero está incompleta"> Existe pero está incompleta</label>
+        <label><input type="radio" name="presencia" value="Existe y es continua"> Existe y es continua</label>
       </div>
 
-      <div class="radio-block">
-        <label>¿Qué problema o necesidad tiene u observa para los ciclistas?</label>
-        <div class="radio-group">
-          <label><input type="radio" name="problema" value="Ciclovía deteriorada" required> Ciclovía deteriorada (baches, grietas, cortes)</label>
-          <label><input type="radio" name="problema" value="Obstáculo en la ruta"> Obstáculo en la ruta (auto, poste, basura, etc.)</label>
-          <label><input type="radio" name="problema" value="Alto flujo y velocidad de vehículos"> Alto flujo y velocidad de vehículos</label>
-          <label><input type="radio" name="problema" value="Falta de iluminación"> Falta de iluminación</label>
-          <label><input type="radio" name="problema" value="Conexión importante"> Conexión importante entre barrios o servicios</label>
-        </div>
+      <label>Problema observado</label>
+      <div class="radio-group">
+        <label><input type="radio" name="problema" value="Ciclovía deteriorada" required> Ciclovía deteriorada</label>
+        <label><input type="radio" name="problema" value="Obstáculo en ruta"> Obstáculo en la ruta</label>
+        <label><input type="radio" name="problema" value="Alto flujo vehicular"> Alto flujo vehicular</label>
+        <label><input type="radio" name="problema" value="Falta de iluminación"> Falta de iluminación</label>
+        <label><input type="radio" name="problema" value="Conexión importante"> Conexión importante</label>
       </div>
 
-      <div class="radio-block">
-        <label>¿Qué tan grave considera el problema?</label>
-        <div class="radio-group">
-          <label><input type="radio" name="gravedad" value="Bajo" required> Bajo</label>
-          <label><input type="radio" name="gravedad" value="Medio"> Medio</label>
-          <label><input type="radio" name="gravedad" value="Alto"> Alto</label>
-        </div>
+      <label>Gravedad del problema</label>
+      <div class="radio-group">
+        <label><input type="radio" name="gravedad" value="Bajo" required> Bajo</label>
+        <label><input type="radio" name="gravedad" value="Medio"> Medio</label>
+        <label><input type="radio" name="gravedad" value="Alto"> Alto</label>
       </div>
 
-      <label for="comentario">Observación o comentario</label>
-      <textarea id="comentario" name="comentario" rows="2"></textarea>
+      <label>Comentario</label>
+      <textarea id="comentario" rows="2"></textarea>
 
-      <label for="foto">Fotografía del lugar (opcional, no se sube por ahora)</label>
-      <input type="file" id="foto" name="foto" accept="image/*" />
+      <!-- BLOQUE: Punto del problema -->
+      <section class="bloque">
+        <h2>Punto exacto del problema</h2>
+        <p class="nota">Haz clic en el mapa para marcar el punto.</p>
 
-      <!-- BLOQUE 3: MAPA DEL PUNTO DEL PROBLEMA -->
-      <section class="bloque" style="margin-top:1rem;">
-        <h2>Punto donde observa el problema</h2>
-        <p class="nota">
-          Marque en el mapa el punto donde observa el problema. Al hacer clic, se llenarán
-          los campos de latitud y longitud.
-        </p>
+        <label>Latitud</label>
+        <input id="latProblema" readonly required />
 
-        <label for="latProblema">Latitud (x.y °)</label>
-        <input type="text" id="latProblema" name="latProblema" readonly required />
-
-        <label for="lngProblema">Longitud (x.y °)</label>
-        <input type="text" id="lngProblema" name="lngProblema" readonly required />
+        <label>Longitud</label>
+        <input id="lngProblema" readonly required />
 
         <div class="search-container">
           <input id="searchProblema" type="text" placeholder="buscar lugar o dirección" />
@@ -251,291 +193,164 @@
     </form>
   </section>
 
-  <!-- BLOQUE 4: LISTA DE REPORTES PARA VALIDAR -->
-  <section class="bloque">
-    <h2>Reportes registrados</h2>
-    <p class="nota">Aquí puedes ver de manera rápida los reportes almacenados para validar la información.</p>
-    <div id="listaReportes"></div>
-  </section>
 </main>
 
-<!-- Leaflet JS -->
+<!-- Leaflet + Draw -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- Leaflet.draw JS -->
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-<!-- Firebase SDK compat (para usar en navegador puro) -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
-  // 1. CONFIGURACIÓN DE FIREBASE (tuya real)
+
+  /* ============================
+      CONFIGURACIÓN FIREBASE
+  ============================ */
   const firebaseConfig = {
     apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
     authDomain: "ciclovias-3d361.firebaseapp.com",
     projectId: "ciclovias-3d361",
     storageBucket: "ciclovias-3d361.appspot.com",
     messagingSenderId: "94373830982",
-    appId: "1:94373830982:web:afbf251bfc78b9c7744547",
-    measurementId: "G-P7LH935R2T"
+    appId: "1:94373830982:web:afbf251bfc78b9c7744547"
   };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // Pequeña función de ayuda para geocodificar
-  async function buscarLugar(inputId, map, moverMarcadorCallback) {
-    const q = document.getElementById(inputId).value;
-    if (!q.trim()) return;
+  /* ============================
+      MAPA DE RUTA
+  ============================ */
+  const mapRuta = L.map("mapRuta").setView([-33.45, -70.66], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapRuta);
 
-    try {
-      const url = "https://nominatim.openstreetmap.org/search?format=json&q="
-              + encodeURIComponent(q) + "&limit=1";
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (!data || data.length === 0) {
-        alert("No se encontró el lugar.");
-        return;
-      }
-
-      const lat = parseFloat(data[0].lat);
-      const lon = parseFloat(data[0].lon);
-      map.setView([lat, lon], 16);
-
-      if (moverMarcadorCallback) {
-        moverMarcadorCallback(lat, lon);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error al buscar la dirección.");
-    }
-  }
-
-  function irAMiUbicacion(map, moverMarcadorCallback) {
-    if (!navigator.geolocation) {
-      alert("Tu navegador no soporta geolocalización.");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              const lat = pos.coords.latitude;
-              const lon = pos.coords.longitude;
-              map.setView([lat, lon], 16);
-              if (moverMarcadorCallback) {
-                moverMarcadorCallback(lat, lon);
-              }
-            },
-            () => {
-              alert("No se pudo obtener tu ubicación.");
-            }
-    );
-  }
-
-  // 2. MAPA DE RUTA (con dibujo de línea)
-  const mapRuta = L.map("mapRuta").setView([-33.45, -70.66], 11);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors"
-  }).addTo(mapRuta);
-
-  const featureGroupRuta = new L.FeatureGroup().addTo(mapRuta);
-  let rutaGeoJSONInput = document.getElementById("rutaGeoJSON");
+  const rutaGroup = new L.FeatureGroup().addTo(mapRuta);
+  document.getElementById("rutaGeoJSON").value = "";
 
   const drawControl = new L.Control.Draw({
     draw: {
       polyline: true,
       polygon: false,
+      marker: false,
       rectangle: false,
       circle: false,
-      circlemarker: false,
-      marker: false
+      circlemarker: false
     },
     edit: {
-      featureGroup: featureGroupRuta,
+      featureGroup: rutaGroup,
       remove: true
     }
   });
+
   mapRuta.addControl(drawControl);
 
-  mapRuta.on(L.Draw.Event.CREATED, function (e) {
-    featureGroupRuta.clearLayers();
-    const layer = e.layer;
-    featureGroupRuta.addLayer(layer);
-    const geojson = layer.toGeoJSON();
-    rutaGeoJSONInput.value = JSON.stringify(geojson);
+  mapRuta.on("draw:created", (e) => {
+    rutaGroup.clearLayers();
+    rutaGroup.addLayer(e.layer);
+    document.getElementById("rutaGeoJSON").value = JSON.stringify(e.layer.toGeoJSON());
   });
 
-  mapRuta.on(L.Draw.Event.EDITED, function () {
-    featureGroupRuta.eachLayer(function (layer) {
-      const geojson = layer.toGeoJSON();
-      rutaGeoJSONInput.value = JSON.stringify(geojson);
-    });
-  });
-
-  mapRuta.on(L.Draw.Event.DELETED, function () {
-    rutaGeoJSONInput.value = "";
-  });
-
-  // Buscador y ubicación para RUTA
-  document.getElementById("btnBuscarRuta").addEventListener("click", () => {
-    buscarLugar("searchRuta", mapRuta, null);
-  });
-
-  document.getElementById("searchRuta").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      buscarLugar("searchRuta", mapRuta, null);
-    }
-  });
-
-  document.getElementById("btnUbicacionRuta").addEventListener("click", () => {
-    irAMiUbicacion(mapRuta, null);
-  });
-
-  // 3. MAPA DEL PUNTO DEL PROBLEMA
-  const mapProblema = L.map("mapProblema").setView([-33.45, -70.66], 11);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "&copy; OpenStreetMap contributors"
-  }).addTo(mapProblema);
+  /* ============================
+      MAPA DEL PROBLEMA
+  ============================ */
+  const mapProblema = L.map("mapProblema").setView([-33.45, -70.66], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapProblema);
 
   let marcadorProblema = null;
 
-  function moverMarcadorProblema(lat, lon) {
-    const latInput = document.getElementById("latProblema");
-    const lngInput = document.getElementById("lngProblema");
-    latInput.value = lat.toFixed(6);
-    lngInput.value = lon.toFixed(6);
+  function moverMarcador(lat, lon) {
+    document.getElementById("latProblema").value = lat.toFixed(6);
+    document.getElementById("lngProblema").value = lon.toFixed(6);
 
-    const latlng = L.latLng(lat, lon);
-
-    if (marcadorProblema) {
-      marcadorProblema.setLatLng(latlng);
-    } else {
-      marcadorProblema = L.marker(latlng, { draggable: true }).addTo(mapProblema);
+    if (!marcadorProblema) {
+      marcadorProblema = L.marker([lat, lon], { draggable: true }).addTo(mapProblema);
       marcadorProblema.on("dragend", (ev) => {
-        const pos = ev.target.getLatLng();
-        latInput.value = pos.lat.toFixed(6);
-        lngInput.value = pos.lng.toFixed(6);
+        moverMarcador(ev.target.getLatLng().lat, ev.target.getLatLng().lng);
       });
+    } else {
+      marcadorProblema.setLatLng([lat, lon]);
     }
   }
 
-  mapProblema.on("click", (e) => {
-    const { lat, lng } = e.latlng;
-    moverMarcadorProblema(lat, lng);
-  });
+  mapProblema.on("click", (e) => moverMarcador(e.latlng.lat, e.latlng.lng));
 
-  // Buscador y ubicación para PROBLEMA
-  document.getElementById("btnBuscarProblema").addEventListener("click", () => {
-    buscarLugar("searchProblema", mapProblema, moverMarcadorProblema);
-  });
+  /* ============================
+      BUSCADORES: RUTA + PROBLEMA
+  ============================ */
 
-  document.getElementById("searchProblema").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      buscarLugar("searchProblema", mapProblema, moverMarcadorProblema);
+  async function buscarDireccion(inputId, map, moverCallback) {
+    const q = document.getElementById(inputId).value;
+    if (!q.trim()) return;
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (data.length === 0) {
+      alert("No se encontró la dirección.");
+      return;
     }
-  });
 
-  document.getElementById("btnUbicacionProblema").addEventListener("click", () => {
-    irAMiUbicacion(mapProblema, moverMarcadorProblema);
-  });
+    const lat = parseFloat(data[0].lat);
+    const lon = parseFloat(data[0].lon);
 
-  // 4. ENVÍO DEL FORMULARIO A FIRESTORE
-  const form = document.getElementById("reporteForm");
-  const listaReportes = document.getElementById("listaReportes");
+    map.setView([lat, lon], 16);
+    if (moverCallback) moverCallback(lat, lon);
+  }
 
-  form.addEventListener("submit", async (e) => {
+  // Ruta
+  document.getElementById("btnBuscarRuta").onclick = () =>
+    buscarDireccion("searchRuta", mapRuta, null);
+
+  // Problema
+  document.getElementById("btnBuscarProblema").onclick = () =>
+    buscarDireccion("searchProblema", mapProblema, moverMarcador);
+
+  /* ============================
+      ENVIAR A FIREBASE
+  ============================ */
+
+  document.getElementById("reporteForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const rutaGeoJSON = rutaGeoJSONInput.value;
-    const presencia = document.querySelector('input[name="presencia"]:checked')?.value || "";
-    const problema = document.querySelector('input[name="problema"]:checked')?.value || "";
-    const gravedad = document.querySelector('input[name="gravedad"]:checked')?.value || "";
-    const comentario = document.getElementById("comentario").value.trim();
+    const ruta = document.getElementById("rutaGeoJSON").value;
+    const presencia = document.querySelector('input[name="presencia"]:checked')?.value;
+    const problema = document.querySelector('input[name="problema"]:checked')?.value;
+    const gravedad =
+      document.querySelector('input[name="gravedad"]:checked')?.value;
+    const comentario = document.getElementById("comentario").value;
+    const lat = parseFloat(document.getElementById("latProblema").value);
+    const lng = parseFloat(document.getElementById("lngProblema").value);
 
-    const latProblema = parseFloat(document.getElementById("latProblema").value);
-    const lngProblema = parseFloat(document.getElementById("lngProblema").value);
+    if (!ruta) return alert("Debes dibujar la ruta.");
+    if (isNaN(lat) || isNaN(lng)) return alert("Debes marcar el punto del problema.");
 
-    if (!rutaGeoJSON) {
-      alert("Debes dibujar la ruta en el primer mapa.");
-      return;
-    }
-
-    if (isNaN(latProblema) || isNaN(lngProblema)) {
-      alert("Debes marcar el punto del problema en el segundo mapa.");
-      return;
-    }
-
-    const nuevoReporte = {
-      rutaGeoJSON,
+    const reporte = {
+      rutaGeoJSON: ruta,
       presencia,
       problema,
       gravedad,
       comentario,
-      latProblema,
-      lngProblema,
+      latProblema: lat,
+      lngProblema: lng,
+      estado: "pendiente",  // ← IMPORTANTE
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
 
     try {
-      await db.collection("reportes").add(nuevoReporte);
-      alert("Reporte guardado correctamente.");
+      await db.collection("reportes").add(reporte);
+      alert("Reporte enviado. ¡Gracias por participar!");
 
-      form.reset();
-      rutaGeoJSONInput.value = "";
-      featureGroupRuta.clearLayers();
-      if (marcadorProblema) {
-        mapProblema.removeLayer(marcadorProblema);
-        marcadorProblema = null;
-      }
-      document.getElementById("latProblema").value = "";
-      document.getElementById("lngProblema").value = "";
-    } catch (error) {
-      console.error("Error al guardar:", error);
-      alert("Ocurrió un error al guardar el reporte. Revisa la consola.");
+      location.reload(); // limpia todo
+
+    } catch (err) {
+      console.error(err);
+      alert("Error al guardar el reporte.");
     }
   });
 
-  // 5. LEER REPORTES DESDE FIRESTORE Y MOSTRARLOS EN EL MAPA DE PROBLEMAS Y EN LISTA
-  const marcadoresGuardados = {};
-
-  db.collection("reportes")
-    .orderBy("timestamp", "asc")
-    .onSnapshot((snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        const doc = change.doc;
-        const data = doc.data();
-
-        if (change.type === "added") {
-          if (data.latProblema && data.lngProblema) {
-            const m = L.marker([data.latProblema, data.lngProblema]).addTo(mapProblema);
-            m.bindPopup(
-              `<strong>${data.problema || "Problema"}</strong><br/>
-               Presencia ciclovía: ${data.presencia || "N/A"}<br/>
-               Gravedad: ${data.gravedad || "N/A"}<br/>
-               Comentario: ${data.comentario || ""}`
-            );
-            marcadoresGuardados[doc.id] = m;
-          }
-
-          const item = document.createElement("div");
-          item.className = "reporte-item";
-          item.innerHTML = `
-            <strong>${data.problema || "Problema"}</strong><br/>
-            Presencia: ${data.presencia || "N/A"}<br/>
-            Gravedad: ${data.gravedad || "N/A"}<br/>
-            Punto: (${data.latProblema?.toFixed ? data.latProblema.toFixed(4) : data.latProblema},
-                    ${data.lngProblema?.toFixed ? data.lngProblema.toFixed(4) : data.lngProblema})<br/>
-            Comentario: ${data.comentario || ""}`;
-          listaReportes.appendChild(item);
-        }
-      });
-    });
 </script>
 </body>
 </html>
