@@ -24,7 +24,7 @@
 
     #map {
       width: 100%;
-      height: 100vh; 
+      height: 100vh;
     }
 
     .titulo {
@@ -56,101 +56,76 @@
     crossorigin="">
   </script>
 
-  <!-- TU SCRIPT CORRECTO (SOLO UNO) -->
+  <!-- SCRIPT: MAPA + CONEXIÓN A KOBO -->
   <script>
+    /////////////////////////////
     // 1. Crear el mapa
+    /////////////////////////////
+
     const map = L.map('map').setView([-33.45, -70.66], 12);
 
-    // 2. Capa base
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19
     }).addTo(map);
 
-    // 3. Capas vacías (rutas y puntos)
+    /////////////////////////////
+    // 2. Capas para rutas y puntos
+    /////////////////////////////
+
     const rutasLayer = L.geoJSON(null, {
       style: {
         color: '#00ffff',
         weight: 8
       },
       onEachFeature: function (feature, layer) {
-        if (feature.properties) {
-          layer.bindPopup(`
-            <b>Ruta reportada</b><br>
-            Ciclovía: ${feature.properties.descripcion_ciclovia || '-'}<br>
-            Problema: ${feature.properties.problema || '-'}<br>
-            Gravedad: ${feature.properties.gravedad || '-'}
-          `);
-        }
+        layer.bindPopup(`
+          <b>Ruta reportada</b><br>
+          Ciclovía: ${feature.properties.descripcion_ciclovia || "-"}<br>
+          Problema: ${feature.properties.problema || "-"}<br>
+          Gravedad: ${feature.properties.gravedad || "-"}
+        `);
       }
     }).addTo(map);
 
     const puntosLayer = L.geoJSON(null, {
-      pointToLayer: function (feature, latlng) {
-        return L.circleMarker(latlng, {
+      pointToLayer: (feature, latlng) =>
+        L.circleMarker(latlng, {
           radius: 10,
           fillColor: 'yellow',
           color: 'black',
           weight: 2,
           fillOpacity: 0.9
-        });
-      },
+        }),
       onEachFeature: function (feature, layer) {
-        if (feature.properties) {
-          layer.bindPopup(`
-            <b>Punto de problema</b><br>
-            Problema: ${feature.properties.problema || '-'}<br>
-            Gravedad: ${feature.properties.gravedad || '-'}<br>
-            Comentario: ${feature.properties.comentario || '-'}
-          `);
+        let html = `
+          <b>Punto de problema</b><br>
+          Problema: ${feature.properties.problema || "-"}<br>
+          Gravedad: ${feature.properties.gravedad || "-"}<br>
+          Comentario: ${feature.properties.comentario || "-"}
+        `;
+
+        if (feature.properties.foto) {
+          html += `<br><img src="${feature.properties.foto}" width="200">`;
         }
+
+        layer.bindPopup(html);
       }
     }).addTo(map);
 
-    // 4. Datos de ejemplo
-    const rutasEjemplo = {
-      "type": "FeatureCollection",
-      "features": [{
-        "type": "Feature",
-        "geometry": {
-          "type": "LineString",
-          "coordinates": [
-            [-70.676, -33.45],
-            [-70.66, -33.455],
-            [-70.64, -33.46]
-          ]
-        },
-        "properties": {
-          "descripcion_ciclovia": "Existe pero se corta en algunos tramos",
-          "problema": "ciclovia_interrumpida",
-          "gravedad": "Alta"
-        }
-      }]
-    };
+    /////////////////////////////
+    // 3. Parámetros de Kobo
+    /////////////////////////////
 
-    const puntosEjemplo = {
-      "type": "FeatureCollection",
-      "features": [{
-        "type": "Feature",
-        "geometry": {
-          "type": "Point",
-          "coordinates": [-70.665, -33.455]
-        },
-        "properties": {
-          "problema": "alto_flujo_vehiculos",
-          "gravedad": "Media",
-          "comentario": "Muchos autos cruzan la ciclovía sin mirar."
-        }
-      }]
-    };
+    const KOBO_TOKEN = "f807ac95f0b662a595c705cc12ef87b0a4ae4dba"; // <-- pega aquí tu token real
+    const FORM_ID = "aaj5JTTTZMXKW8UmRvA7tK";
 
-    // 5. Agregar datos al mapa
-    rutasLayer.addData(rutasEjemplo);
-    puntosLayer.addData(puntosEjemplo);
+    const KOBO_URL =
+      `https://kf.kobotoolbox.org/api/v2/assets/${FORM_ID}/submissions/?format=json`;
 
-    // 6. Ajustar zoom automáticamente
-    const grupo = L.featureGroup([rutasLayer, puntosLayer]);
-    map.fitBounds(grupo.getBounds(), { padding: [50, 50] });
-  </script>
+    /////////////////////////////
+    // 4. Llamar a la API de Kobo
+    /////////////////////////////
 
-</body>
-</html>
+    async function cargarDatosKobo() {
+      try {
+        const res = await fetch(KOBO
