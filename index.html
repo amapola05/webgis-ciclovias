@@ -85,11 +85,13 @@
     }
 
     input[type="text"],
-    textarea {
+    textarea,
+    input[type="file"] {
       width: 100%;
       padding: 0.4rem;
       border: 1px solid #ccc;
       border-radius: 4px;
+      box-sizing: border-box;
     }
 
     textarea {
@@ -146,28 +148,31 @@
       <label>Presencia de ciclovía</label>
       <div class="radio-group">
         <label><input type="radio" name="presencia" value="No existe ciclovía" required> No existe ciclovía</label>
-        <label><input type="radio" name="presencia" value="Existe pero está incompleta"> Existe pero está incompleta</label>
-        <label><input type="radio" name="presencia" value="Existe y es continua"> Existe y es continua</label>
+        <label><input type="radio" name="presencia" value="Existe pero está incompleta / se corta en algunos tramos"> Existe pero está incompleta / se corta en algunos tramos</label>
+        <label><input type="radio" name="presencia" value="Existe y es continua en toda la ruta"> Existe y es continua en toda la ruta</label>
       </div>
 
-      <label>Problema observado</label>
+      <label>¿Qué problema o necesidad tiene u observa para los ciclistas?</label>
       <div class="radio-group">
-        <label><input type="radio" name="problema" value="Ciclovía deteriorada" required> Ciclovía deteriorada</label>
-        <label><input type="radio" name="problema" value="Obstáculo en ruta"> Obstáculo en la ruta</label>
-        <label><input type="radio" name="problema" value="Alto flujo vehicular"> Alto flujo vehicular</label>
+        <label><input type="radio" name="problema" value="Ciclovía deteriorada (baches, grietas, cortes)" required> Ciclovía deteriorada (baches, grietas, cortes)</label>
+        <label><input type="radio" name="problema" value="Obstáculo en la ruta (auto, poste, basura, etc.)"> Obstáculo en la ruta (auto, poste, basura, etc.)</label>
+        <label><input type="radio" name="problema" value="Alto flujo y velocidad de vehículos"> Alto flujo y velocidad de vehículos</label>
         <label><input type="radio" name="problema" value="Falta de iluminación"> Falta de iluminación</label>
-        <label><input type="radio" name="problema" value="Conexión importante"> Conexión importante</label>
       </div>
 
-      <label>Gravedad del problema</label>
+      <label>¿Qué tan grave considera el problema?</label>
       <div class="radio-group">
         <label><input type="radio" name="gravedad" value="Bajo" required> Bajo</label>
         <label><input type="radio" name="gravedad" value="Medio"> Medio</label>
         <label><input type="radio" name="gravedad" value="Alto"> Alto</label>
       </div>
 
-      <label>Comentario</label>
+      <label>Observación o comentario</label>
       <textarea id="comentario" rows="2"></textarea>
+
+      <label>Fotografía del lugar (opcional)</label>
+      <input id="foto" type="file" accept="image/*" />
+      <!-- OJO: de momento solo se muestra, no se guarda en Firebase -->
 
       <!-- BLOQUE: Punto del problema -->
       <section class="bloque">
@@ -204,7 +209,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
-
   /* ============================
       CONFIGURACIÓN FIREBASE
   ============================ */
@@ -316,16 +320,32 @@
     e.preventDefault();
 
     const ruta = document.getElementById("rutaGeoJSON").value;
-    const presencia = document.querySelector('input[name="presencia"]:checked')?.value;
-    const problema = document.querySelector('input[name="problema"]:checked')?.value;
-    const gravedad =
-      document.querySelector('input[name="gravedad"]:checked')?.value;
+
+    const presenciaSel = document.querySelector('input[name="presencia"]:checked');
+    const problemaSel  = document.querySelector('input[name="problema"]:checked');
+    const gravedadSel  = document.querySelector('input[name="gravedad"]:checked');
+
+    if (!presenciaSel || !problemaSel || !gravedadSel) {
+      alert("Por favor responde presencia, problema y gravedad.");
+      return;
+    }
+
+    const presencia = presenciaSel.value;
+    const problema  = problemaSel.value;
+    const gravedad  = gravedadSel.value;
+
     const comentario = document.getElementById("comentario").value;
     const lat = parseFloat(document.getElementById("latProblema").value);
     const lng = parseFloat(document.getElementById("lngProblema").value);
 
-    if (!ruta) return alert("Debes dibujar la ruta.");
-    if (isNaN(lat) || isNaN(lng)) return alert("Debes marcar el punto del problema.");
+    if (!ruta) {
+      alert("Debes dibujar la ruta.");
+      return;
+    }
+    if (isNaN(lat) || isNaN(lng)) {
+      alert("Debes marcar el punto del problema.");
+      return;
+    }
 
     const reporte = {
       rutaGeoJSON: ruta,
@@ -335,22 +355,21 @@
       comentario,
       latProblema: lat,
       lngProblema: lng,
-      estado: "pendiente",  // ← IMPORTANTE
+      estado: "pendiente",
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      // la foto no se guarda aún
     };
 
     try {
       await db.collection("reportes").add(reporte);
       alert("Reporte enviado. ¡Gracias por participar!");
-
       location.reload(); // limpia todo
-
     } catch (err) {
       console.error(err);
       alert("Error al guardar el reporte.");
     }
   });
-
 </script>
 </body>
 </html>
+
