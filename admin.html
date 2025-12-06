@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Panel de validación - WebGIS ciclovías</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #f5f6fa;
+    }
+    h1 {
+      text-align: center;
+      padding: 0.8rem;
+      background: #26689c;
+      color: white;
+      margin: 0;
+    }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    th, td {
+      border-bottom: 1px solid #ddd;
+      padding: 0.4rem;
+      vertical-align: top;
+    }
+    th {
+      background: #eef3fb;
+      font-weight: 600;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    button {
+      padding: 0.25rem 0.5rem;
+      margin: 0.1rem;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .btn-aprobar {
+      background: #33a06f;
+      color: white;
+    }
+    .btn-rechazar {
+      background: #d9534f;
+      color: white;
+    }
+    .estado-tag {
+      padding: 0.2rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: white;
+    }
+    .pendiente { background: #f0ad4e; }
+    .aprobado { background: #5cb85c; }
+    .rechazado { background: #d9534f; }
+    .nota {
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+<h1>Panel de validación - Ciclovías</h1>
+
+<main>
+  <p class="nota">
+    Aquí puedes revisar los reportes enviados por la comunidad y aprobarlos o rechazarlos.
+    Solo los aprobados aparecerán en el mapa final.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Problema</th>
+        <th>Presencia</th>
+        <th>Gravedad</th>
+        <th>Coordenadas</th>
+        <th>Comentario</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaReportes"></tbody>
+  </table>
+</main>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+<script>
+  // MISMO CONFIG QUE EN index.html
+  const firebaseConfig = {
+    apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
+    authDomain: "ciclovias-3d361.firebaseapp.com",
+    projectId: "ciclovias-3d361",
+    storageBucket: "ciclovias-3d361.appspot.com",
+    messagingSenderId: "94373830982",
+    appId: "1:94373830982:web:afbf251bfc78b9c7744547"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const tabla = document.getElementById("tablaReportes");
+
+  function crearFila(id, data) {
+    const fila = document.createElement("tr");
+    const estado = data.estado || "pendiente";
+
+    fila.dataset.id = id;
+    fila.innerHTML = `
+      <td>${data.problema}</td>
+      <td>${data.presencia}</td>
+      <td>${data.gravedad}</td>
+      <td>${data.latProblema?.toFixed(4)}, ${data.lngProblema?.toFixed(4)}</td>
+      <td>${data.comentario || "Sin comentario"}</td>
+      <td><span class="estado-tag ${estado}">${estado}</span></td>
+      <td>
+        <button class="btn-aprobar" data-accion="aprobar">Aprobar</button>
+        <button class="btn-rechazar" data-accion="rechazar">Rechazar</button>
+      </td>
+    `;
+    return fila;
+  }
+
+  // ESCUCHAR CAMBIOS EN FIRESTORE
+  db.collection("reportes")
+    .orderBy("timestamp", "desc")
+    .onSnapshot((snapshot) => {
+      snapshot.docChanges().forEach((cambio) => {
+        const doc = cambio.doc;
+        const data = doc.data();
+        const id = doc.id;
+
+        if (cambio.type === "added") {
+          const fila = crearFila(id, data);
+          tabla.appendChild(fila);
+        }
+
+        if (cambio.type === "modified") {
+          const filaVieja = tabla.querySelector(`tr[data-id="${id}"]`);
+          const filaNueva = crearFila(id, data);
+          tabla.replaceChild(filaNueva, filaVieja);
+        }
+      });
+    });
+
+  // APROBAR / RECHAZAR
+  tabla.addEventListener("click", async (e) => {
+    const btn = e.target;
+    const accion = btn.dataset.accion;
+    if (!accion) return;
+
+    const fila = btn.closest("tr");
+    const id = fila.dataset.id;
+
+    const nuevoEstado = accion === "aprobar" ? "aprobado" : "rechazado";
+
+    try {
+      await db.collection("reportes").doc(id).update({ estado: nuevoEstado });
+    } catch (err) {
+      alert("Error al actualizar estado.");
+    }
+  });
+</script>
+
+</body>
+</html>
