@@ -2,207 +2,417 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>WebGIS ciclovías – Chile</title>
-
+  <title>WebGIS ciclovías Chile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
+  />
+
+  <!-- Leaflet.draw CSS (para dibujar la ruta) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
   />
 
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      height: 100%;
-      font-family: Arial, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+      background: #f5f6fa;
     }
 
-    #map {
+    h1 {
+      text-align: center;
+      padding: 0.8rem;
+      background: #26689c;
+      color: white;
+      margin: 0;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .bloque {
+      background: white;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+
+    .nota {
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 0.5rem;
+    }
+
+    #mapRuta,
+    #mapProblema {
       width: 100%;
-      height: 100vh;
+      height: 380px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
 
-    .titulo {
-      position: absolute;
-      z-index: 1000;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.9);
-      padding: 6px 12px;
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-top: 0.4rem;
+      margin-bottom: 0.15rem;
+      font-weight: 600;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0.35rem;
+      margin-bottom: 0.4rem;
       border-radius: 4px;
-      font-size: 14px;
-      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .radio-group {
+      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    .radio-group label {
+      font-weight: 400;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    button[type="submit"] {
+      margin-top: 0.5rem;
+      background: #26689c;
+      color: white;
+      border: none;
+      padding: 0.5rem 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    button[type="submit"]:hover {
+      background: #1f567f;
+    }
+
+    #listaReportes {
+      font-size: 0.85rem;
+      max-height: 260px;
+      overflow-y: auto;
+      border-top: 1px solid #ddd;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+    }
+
+    .reporte-item {
+      border-bottom: 1px solid #eee;
+      padding: 0.3rem 0;
+    }
+
+    .reporte-item strong {
+      color: #26689c;
     }
   </style>
 </head>
 <body>
+<h1>Análisis participativo de riesgos y necesidades de infraestructura ciclista en Chile</h1>
 
-  <div class="titulo">
-    WebGIS participativo para reportes de ciclovías en Chile
-  </div>
+<main>
+  <!-- BLOQUE 1: RUTA -->
+  <section class="bloque">
+    <h2>Ruta asociada al desplazamiento del ciclista</h2>
+    <p class="nota">
+      Marque en el mapa la ruta asociada al desplazamiento del ciclista, ya sea propia u observada.
+      Si estás respondiendo desde un celular y no ves bien el mapa, activa "Vista de escritorio / Modo computadora".
+    </p>
+    <div id="mapRuta"></div>
+    <!-- Aquí guardamos la ruta en formato GeoJSON -->
+    <input type="hidden" id="rutaGeoJSON" name="rutaGeoJSON" />
+  </section>
 
-  <div id="map"></div>
+  <!-- BLOQUE 2: PREGUNTAS SOBRE LA RUTA -->
+  <section class="bloque">
+    <form id="reporteForm">
+      <h2>Descripción de ciclovía y problemas observados</h2>
 
-  <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin="">
-  </script>
+      <div class="radio-block">
+        <label>En la ruta que dibujaste, ¿cómo describirías la presencia de ciclovía?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="presencia" value="No existe ciclovía" required> No existe ciclovía</label>
+          <label><input type="radio" name="presencia" value="Existe pero está incompleta"> Existe pero está incompleta / se corta en algunos tramos</label>
+          <label><input type="radio" name="presencia" value="Existe y es continua"> Existe y es continua en toda la ruta</label>
+        </div>
+      </div>
 
-  <!-- SCRIPT: MAPA + CONEXIÓN A KOBO -->
-  <script>
-    /////////////////////////////
-    // 1. Crear el mapa
-    /////////////////////////////
+      <div class="radio-block">
+        <label>¿Qué problema o necesidad tiene u observa para los ciclistas?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="problema" value="Ciclovía deteriorada" required> Ciclovía deteriorada (baches, grietas, cortes)</label>
+          <label><input type="radio" name="problema" value="Obstáculo en la ruta"> Obstáculo en la ruta (auto, poste, basura, etc.)</label>
+          <label><input type="radio" name="problema" value="Alto flujo y velocidad de vehículos"> Alto flujo y velocidad de vehículos</label>
+          <label><input type="radio" name="problema" value="Falta de iluminación"> Falta de iluminación</label>
+          <label><input type="radio" name="problema" value="Conexión importante"> Conexión importante entre barrios o servicios</label>
+        </div>
+      </div>
 
-    const map = L.map('map').setView([-33.45, -70.66], 12);
+      <div class="radio-block">
+        <label>¿Qué tan grave considera el problema?</label>
+        <div class="radio-group">
+          <label><input type="radio" name="gravedad" value="Bajo" required> Bajo</label>
+          <label><input type="radio" name="gravedad" value="Medio"> Medio</label>
+          <label><input type="radio" name="gravedad" value="Alto"> Alto</label>
+        </div>
+      </div>
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(map);
+      <label for="comentario">Observación o comentario</label>
+      <textarea id="comentario" name="comentario" rows="2"></textarea>
 
-    /////////////////////////////
-    // 2. Capas para rutas y puntos
-    /////////////////////////////
+      <label for="foto">Fotografía del lugar (opcional, no se sube por ahora)</label>
+      <input type="file" id="foto" name="foto" accept="image/*" />
 
-    const rutasLayer = L.geoJSON(null, {
-      style: {
-        color: '#00ffff',
-        weight: 8
-      },
-      onEachFeature: function (feature, layer) {
-        layer.bindPopup(`
-          <b>Ruta reportada</b><br>
-          Ciclovía: ${feature.properties.descripcion_ciclovia || "-"}<br>
-          Problema: ${feature.properties.problema || "-"}<br>
-          Gravedad: ${feature.properties.gravedad || "-"}
-        `);
-      }
-    }).addTo(map);
+      <!-- BLOQUE 3: MAPA DEL PUNTO DEL PROBLEMA -->
+      <section class="bloque" style="margin-top:1rem;">
+        <h2>Punto donde observa el problema</h2>
+        <p class="nota">
+          Marque en el mapa el punto donde observa el problema. Al hacer clic, se llenarán
+          los campos de latitud y longitud.
+        </p>
 
-    const puntosLayer = L.geoJSON(null, {
-      pointToLayer: (feature, latlng) =>
-        L.circleMarker(latlng, {
-          radius: 10,
-          fillColor: 'yellow',
-          color: 'black',
-          weight: 2,
-          fillOpacity: 0.9
-        }),
-      onEachFeature: function (feature, layer) {
-        let html = `
-          <b>Punto de problema</b><br>
-          Problema: ${feature.properties.problema || "-"}<br>
-          Gravedad: ${feature.properties.gravedad || "-"}<br>
-          Comentario: ${feature.properties.comentario || "-"}
-        `;
+        <label for="latProblema">Latitud (x.y °)</label>
+        <input type="text" id="latProblema" name="latProblema" readonly required />
 
-        if (feature.properties.foto) {
-          html += `<br><img src="${feature.properties.foto}" width="200">`;
-        }
+        <label for="lngProblema">Longitud (x.y °)</label>
+        <input type="text" id="lngProblema" name="lngProblema" readonly required />
 
-        layer.bindPopup(html);
-      }
-    }).addTo(map);
+        <div id="mapProblema"></div>
+      </section>
 
-    /////////////////////////////
-    // 3. Parámetros de Kobo
-    /////////////////////////////
+      <button type="submit">Enviar reporte</button>
+    </form>
+  </section>
 
-    const KOBO_TOKEN = "f807ac95f0b662a595c705cc12ef87b0a4ae4dba"; // <-- pega aquí tu token real
-    const FORM_ID = "aaj5JTTTZMXKW8UmRvA7tK";
+  <!-- BLOQUE 4: LISTA DE REPORTES PARA VALIDAR -->
+  <section class="bloque">
+    <h2>Reportes registrados</h2>
+    <p class="nota">Aquí puedes ver de manera rápida los reportes almacenados para validar la información.</p>
+    <div id="listaReportes"></div>
+  </section>
+</main>
 
-    const KOBO_URL =
-      `https://kf.kobotoolbox.org/api/v2/assets/${FORM_ID}/submissions/?format=json`;
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    /////////////////////////////
-    // 4. Llamar a la API de Kobo
-    /////////////////////////////
+<!-- Leaflet.draw JS -->
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-    async function cargarDatosKobo() {
-      try {
-        const res = await fetch(KOBO_URL, {
-          headers: {
-            "Authorization": `Token ${KOBO_TOKEN}`,
-            "Accept": "application/json"
-          }
-        });
+<!-- Firebase SDK compat (para usar en navegador puro) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-        if (!res.ok) {
-          console.error("Error en respuesta de Kobo:", res.status, await res.text());
-          return;
-        }
+<script>
+  // 1. CONFIGURACIÓN DE FIREBASE (tuya real)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
+    authDomain: "ciclovias-3d361.firebaseapp.com",
+    projectId: "ciclovias-3d361",
+    storageBucket: "ciclovias-3d361.appspot.com",
+    messagingSenderId: "94373830982",
+    appId: "1:94373830982:web:afbf251bfc78b9c7744547",
+    measurementId: "G-P7LH935R2T"
+  };
 
-        const data = await res.json();
-        console.log("Datos de Kobo:", data);
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-        data.results.forEach(processSubmission);
+  // 2. MAPA DE RUTA (con dibujo de línea)
+  const mapRuta = L.map("mapRuta").setView([-33.45, -70.66], 11);
 
-        // Ajustar el zoom si hay datos
-        const group = L.featureGroup([rutasLayer, puntosLayer]);
-        if (group.getLayers().length > 0) {
-          map.fitBounds(group.getBounds(), { padding: [50, 50] });
-        }
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(mapRuta);
 
-      } catch (e) {
-        console.error("ERROR al conectar a Kobo:", e);
-      }
+  const featureGroupRuta = new L.FeatureGroup().addTo(mapRuta);
+
+  let rutaGeoJSONInput = document.getElementById("rutaGeoJSON");
+
+  const drawControl = new L.Control.Draw({
+    draw: {
+      polyline: true,
+      polygon: false,
+      rectangle: false,
+      circle: false,
+      circlemarker: false,
+      marker: false
+    },
+    edit: {
+      featureGroup: featureGroupRuta,
+      remove: true
+    }
+  });
+  mapRuta.addControl(drawControl);
+
+  mapRuta.on(L.Draw.Event.CREATED, function (e) {
+    // Solo dejamos una ruta: borramos lo anterior
+    featureGroupRuta.clearLayers();
+    const layer = e.layer;
+    featureGroupRuta.addLayer(layer);
+
+    const geojson = layer.toGeoJSON();
+    rutaGeoJSONInput.value = JSON.stringify(geojson);
+  });
+
+  mapRuta.on(L.Draw.Event.EDITED, function () {
+    // Cuando se edite la línea, actualizamos el GeoJSON
+    featureGroupRuta.eachLayer(function (layer) {
+      const geojson = layer.toGeoJSON();
+      rutaGeoJSONInput.value = JSON.stringify(geojson);
+    });
+  });
+
+  mapRuta.on(L.Draw.Event.DELETED, function () {
+    rutaGeoJSONInput.value = "";
+  });
+
+  // 3. MAPA DEL PUNTO DEL PROBLEMA
+  const mapProblema = L.map("mapProblema").setView([-33.45, -70.66], 11);
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(mapProblema);
+
+  let marcadorProblema = null;
+
+  mapProblema.on("click", (e) => {
+    const { lat, lng } = e.latlng;
+    document.getElementById("latProblema").value = lat.toFixed(6);
+    document.getElementById("lngProblema").value = lng.toFixed(6);
+
+    if (marcadorProblema) {
+      marcadorProblema.setLatLng(e.latlng);
+    } else {
+      marcadorProblema = L.marker(e.latlng, { draggable: true }).addTo(mapProblema);
+      marcadorProblema.on("dragend", (ev) => {
+        const pos = ev.target.getLatLng();
+        document.getElementById("latProblema").value = pos.lat.toFixed(6);
+        document.getElementById("lngProblema").value = pos.lng.toFixed(6);
+      });
+    }
+  });
+
+  // 4. ENVÍO DEL FORMULARIO A FIRESTORE
+  const form = document.getElementById("reporteForm");
+  const listaReportes = document.getElementById("listaReportes");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const rutaGeoJSON = rutaGeoJSONInput.value;
+    const presencia = document.querySelector('input[name="presencia"]:checked')?.value || "";
+    const problema = document.querySelector('input[name="problema"]:checked')?.value || "";
+    const gravedad = document.querySelector('input[name="gravedad"]:checked')?.value || "";
+    const comentario = document.getElementById("comentario").value.trim();
+
+    const latProblema = parseFloat(document.getElementById("latProblema").value);
+    const lngProblema = parseFloat(document.getElementById("lngProblema").value);
+
+    if (!rutaGeoJSON) {
+      alert("Debes dibujar la ruta en el primer mapa.");
+      return;
     }
 
-    /////////////////////////////
-    // 5. Procesar cada respuesta del formulario
-    /////////////////////////////
-
-    function processSubmission(sub) {
-
-      // 5.1 RUTA (geotrace: "lat lon alt prec;lat lon alt prec;...")
-      if (sub.ruta) {
-        const coords = sub.ruta.split(";").map(p => {
-          const [lat, lon] = p.trim().split(" ").map(Number);
-          return [lon, lat]; // GeoJSON/Leaflet usa [lon, lat]
-        });
-
-        rutasLayer.addData({
-          type: "Feature",
-          geometry: { type: "LineString", coordinates: coords },
-          properties: {
-            descripcion_ciclovia: sub.descripcion_ciclovia,
-            problema: sub.problema,
-            gravedad: sub.gravedad
-          }
-        });
-      }
-
-      // 5.2 PUNTO (geopoint: "lat lon alt prec")
-      if (sub.punto_problema) {
-        const [lat, lon] = sub.punto_problema.trim().split(" ").map(Number);
-
-        puntosLayer.addData({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [lon, lat] },
-          properties: {
-            problema: sub.problema,
-            gravedad: sub.gravedad,
-            comentario: sub.comentario,
-            foto: sub.Fotografia || null
-          }
-        });
-      }
+    if (isNaN(latProblema) || isNaN(lngProblema)) {
+      alert("Debes marcar el punto del problema en el segundo mapa.");
+      return;
     }
 
-    /////////////////////////////
-    // 6. Ejecutar
-    /////////////////////////////
+    const nuevoReporte = {
+      rutaGeoJSON,
+      presencia,
+      problema,
+      gravedad,
+      comentario,
+      latProblema,
+      lngProblema,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-    cargarDatosKobo();
-  </script>
+    try {
+      await db.collection("reportes").add(nuevoReporte);
+      alert("Reporte guardado correctamente.");
 
+      // Reseteamos el formulario (pero dejamos los mapas limpios)
+      form.reset();
+      rutaGeoJSONInput.value = "";
+      featureGroupRuta.clearLayers();
+      if (marcadorProblema) {
+        mapProblema.removeLayer(marcadorProblema);
+        marcadorProblema = null;
+      }
+      document.getElementById("latProblema").value = "";
+      document.getElementById("lngProblema").value = "";
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      alert("Ocurrió un error al guardar el reporte. Revisa la consola.");
+    }
+  });
+
+  // 5. LEER REPORTES DESDE FIRESTORE Y MOSTRARLOS EN EL MAPA DE PROBLEMAS Y EN LISTA
+  const marcadoresGuardados = {};
+
+  db.collection("reportes")
+          .orderBy("timestamp", "asc")
+          .onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+              const doc = change.doc;
+              const data = doc.data();
+
+              if (change.type === "added") {
+                // marcador en mapa de problemas
+                if (data.latProblema && data.lngProblema) {
+                  const m = L.marker([data.latProblema, data.lngProblema]).addTo(mapProblema);
+                  m.bindPopup(
+                          `<strong>${data.problema || "Problema"}</strong><br/>
+                           Presencia ciclovía: ${data.presencia || "N/A"}<br/>
+                           Gravedad: ${data.gravedad || "N/A"}<br/>
+                           Comentario: ${data.comentario || ""}`
+                  );
+                  marcadoresGuardados[doc.id] = m;
+                }
+
+                // agregar a lista para validar
+                const item = document.createElement("div");
+                item.className = "reporte-item";
+                item.innerHTML = `
+                  <strong>${data.problema || "Problema"}</strong><br/>
+                  Presencia: ${data.presencia || "N/A"}<br/>
+                  Gravedad: ${data.gravedad || "N/A"}<br/>
+                  Punto: (${(data.latProblema || "").toFixed ? data.latProblema.toFixed(4) : data.latProblema},
+                          ${(data.lngProblema || "").toFixed ? data.lngProblema.toFixed(4) : data.lngProblema})<br/>
+                  Comentario: ${data.comentario || ""}`;
+                listaReportes.appendChild(item);
+              }
+            });
+          });
+</script>
 </body>
 </html>
