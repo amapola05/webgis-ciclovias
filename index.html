@@ -128,4 +128,81 @@
 
     async function cargarDatosKobo() {
       try {
-        const res = await fetch(KOBO
+        const res = await fetch(KOBO_URL, {
+          headers: {
+            "Authorization": `Token ${KOBO_TOKEN}`,
+            "Accept": "application/json"
+          }
+        });
+
+        if (!res.ok) {
+          console.error("Error en respuesta de Kobo:", res.status, await res.text());
+          return;
+        }
+
+        const data = await res.json();
+        console.log("Datos de Kobo:", data);
+
+        data.results.forEach(processSubmission);
+
+        // Ajustar el zoom si hay datos
+        const group = L.featureGroup([rutasLayer, puntosLayer]);
+        if (group.getLayers().length > 0) {
+          map.fitBounds(group.getBounds(), { padding: [50, 50] });
+        }
+
+      } catch (e) {
+        console.error("ERROR al conectar a Kobo:", e);
+      }
+    }
+
+    /////////////////////////////
+    // 5. Procesar cada respuesta del formulario
+    /////////////////////////////
+
+    function processSubmission(sub) {
+
+      // 5.1 RUTA (geotrace: "lat lon alt prec;lat lon alt prec;...")
+      if (sub.ruta) {
+        const coords = sub.ruta.split(";").map(p => {
+          const [lat, lon] = p.trim().split(" ").map(Number);
+          return [lon, lat]; // GeoJSON/Leaflet usa [lon, lat]
+        });
+
+        rutasLayer.addData({
+          type: "Feature",
+          geometry: { type: "LineString", coordinates: coords },
+          properties: {
+            descripcion_ciclovia: sub.descripcion_ciclovia,
+            problema: sub.problema,
+            gravedad: sub.gravedad
+          }
+        });
+      }
+
+      // 5.2 PUNTO (geopoint: "lat lon alt prec")
+      if (sub.punto_problema) {
+        const [lat, lon] = sub.punto_problema.trim().split(" ").map(Number);
+
+        puntosLayer.addData({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [lon, lat] },
+          properties: {
+            problema: sub.problema,
+            gravedad: sub.gravedad,
+            comentario: sub.comentario,
+            foto: sub.Fotografia || null
+          }
+        });
+      }
+    }
+
+    /////////////////////////////
+    // 6. Ejecutar
+    /////////////////////////////
+
+    cargarDatosKobo();
+  </script>
+
+</body>
+</html>
