@@ -17,6 +17,12 @@
     href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
   />
 
+  <!-- Leaflet Control Geocoder CSS (buscador de lugares) -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+  />
+
   <style>
     body {
       margin: 0;
@@ -225,6 +231,9 @@
 <!-- Leaflet.draw JS -->
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
+<!-- Leaflet Control Geocoder JS -->
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
 <!-- Firebase SDK compat (para usar en navegador puro) -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -251,8 +260,17 @@
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(mapRuta);
 
-  const featureGroupRuta = new L.FeatureGroup().addTo(mapRuta);
+  // 🔍 Buscador en mapa de RUTA
+  L.Control.geocoder({
+    defaultMarkGeocode: false,
+    placeholder: "buscar lugar o dirección"
+  })
+    .on("markgeocode", function (e) {
+      mapRuta.setView(e.geocode.center, 16);
+    })
+    .addTo(mapRuta);
 
+  const featureGroupRuta = new L.FeatureGroup().addTo(mapRuta);
   let rutaGeoJSONInput = document.getElementById("rutaGeoJSON");
 
   const drawControl = new L.Control.Draw({
@@ -299,6 +317,16 @@
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; OpenStreetMap contributors"
   }).addTo(mapProblema);
+
+  // 🔍 Buscador en mapa del PROBLEMA
+  L.Control.geocoder({
+    defaultMarkGeocode: false,
+    placeholder: "buscar lugar o dirección"
+  })
+    .on("markgeocode", function (e) {
+      mapProblema.setView(e.geocode.center, 16);
+    })
+    .addTo(mapProblema);
 
   let marcadorProblema = null;
 
@@ -380,39 +408,39 @@
   const marcadoresGuardados = {};
 
   db.collection("reportes")
-          .orderBy("timestamp", "asc")
-          .onSnapshot((snapshot) => {
-            snapshot.docChanges().forEach((change) => {
-              const doc = change.doc;
-              const data = doc.data();
+    .orderBy("timestamp", "asc")
+    .onSnapshot((snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        const doc = change.doc;
+        const data = doc.data();
 
-              if (change.type === "added") {
-                // marcador en mapa de problemas
-                if (data.latProblema && data.lngProblema) {
-                  const m = L.marker([data.latProblema, data.lngProblema]).addTo(mapProblema);
-                  m.bindPopup(
-                          `<strong>${data.problema || "Problema"}</strong><br/>
-                           Presencia ciclovía: ${data.presencia || "N/A"}<br/>
-                           Gravedad: ${data.gravedad || "N/A"}<br/>
-                           Comentario: ${data.comentario || ""}`
-                  );
-                  marcadoresGuardados[doc.id] = m;
-                }
+        if (change.type === "added") {
+          // marcador en mapa de problemas
+          if (data.latProblema && data.lngProblema) {
+            const m = L.marker([data.latProblema, data.lngProblema]).addTo(mapProblema);
+            m.bindPopup(
+              `<strong>${data.problema || "Problema"}</strong><br/>
+               Presencia ciclovía: ${data.presencia || "N/A"}<br/>
+               Gravedad: ${data.gravedad || "N/A"}<br/>
+               Comentario: ${data.comentario || ""}`
+            );
+            marcadoresGuardados[doc.id] = m;
+          }
 
-                // agregar a lista para validar
-                const item = document.createElement("div");
-                item.className = "reporte-item";
-                item.innerHTML = `
-                  <strong>${data.problema || "Problema"}</strong><br/>
-                  Presencia: ${data.presencia || "N/A"}<br/>
-                  Gravedad: ${data.gravedad || "N/A"}<br/>
-                  Punto: (${(data.latProblema || "").toFixed ? data.latProblema.toFixed(4) : data.latProblema},
-                          ${(data.lngProblema || "").toFixed ? data.lngProblema.toFixed(4) : data.lngProblema})<br/>
-                  Comentario: ${data.comentario || ""}`;
-                listaReportes.appendChild(item);
-              }
-            });
-          });
+          // agregar a lista para validar
+          const item = document.createElement("div");
+          item.className = "reporte-item";
+          item.innerHTML = `
+            <strong>${data.problema || "Problema"}</strong><br/>
+            Presencia: ${data.presencia || "N/A"}<br/>
+            Gravedad: ${data.gravedad || "N/A"}<br/>
+            Punto: (${data.latProblema?.toFixed ? data.latProblema.toFixed(4) : data.latProblema},
+                    ${data.lngProblema?.toFixed ? data.lngProblema.toFixed(4) : data.lngProblema})<br/>
+            Comentario: ${data.comentario || ""}`;
+          listaReportes.appendChild(item);
+        }
+      });
+    });
 </script>
 </body>
 </html>
