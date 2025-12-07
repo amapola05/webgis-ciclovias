@@ -210,191 +210,198 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
 <script>
-  /* ============================
-      CONFIGURACIÓN FIREBASE
-  ============================ */
-  const firebaseConfig = {
-    apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
-    authDomain: "ciclovias-3d361.firebaseapp.com",
-    projectId: "ciclovias-3d361",
-    storageBucket: "ciclovias-3d361.appspot.com",
-    messagingSenderId: "94373830982",
-    appId: "1:94373830982:web:afbf251bfc78b9c7744547"
-  };
+  // Espero a que cargue TODO el DOM antes de correr el JS
+  window.addEventListener("load", () => {
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  let storage = null;
-  try {
-    storage = firebase.storage();
-  } catch (e) {
-    console.error("Storage no disponible:", e);
-    storage = null;
-  }
-
-  /* ============================
-      MAPA DE RUTA
-  ============================ */
-  const mapRuta = L.map("mapRuta").setView([-33.45, -70.66], 12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapRuta);
-
-  const rutaGroup = new L.FeatureGroup().addTo(mapRuta);
-  document.getElementById("rutaGeoJSON").value = "";
-
-  const drawControl = new L.Control.Draw({
-    draw: {
-      polyline: true,
-      polygon: false,
-      marker: false,
-      rectangle: false,
-      circle: false,
-      circlemarker: false
-    },
-    edit: {
-      featureGroup: rutaGroup,
-      remove: true
-    }
-  });
-
-  mapRuta.addControl(drawControl);
-
-  mapRuta.on("draw:created", (e) => {
-    rutaGroup.clearLayers();
-    rutaGroup.addLayer(e.layer);
-    document.getElementById("rutaGeoJSON").value = JSON.stringify(e.layer.toGeoJSON());
-  });
-
-  /* ============================
-      MAPA DEL PROBLEMA
-  ============================ */
-  const mapProblema = L.map("mapProblema").setView([-33.45, -70.66], 12);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapProblema);
-
-  let marcadorProblema = null;
-
-  function moverMarcador(lat, lon) {
-    document.getElementById("latProblema").value = lat.toFixed(6);
-    document.getElementById("lngProblema").value = lon.toFixed(6);
-
-    if (!marcadorProblema) {
-      marcadorProblema = L.marker([lat, lon], { draggable: true }).addTo(mapProblema);
-      marcadorProblema.on("dragend", (ev) => {
-        moverMarcador(ev.target.getLatLng().lat, ev.target.getLatLng().lng);
-      });
-    } else {
-      marcadorProblema.setLatLng([lat, lon]);
-    }
-  }
-
-  mapProblema.on("click", (e) => moverMarcador(e.latlng.lat, e.latlng.lng));
-
-  /* ============================
-      BUSCADORES: RUTA + PROBLEMA
-  ============================ */
-
-  async function buscarDireccion(inputId, map, moverCallback) {
-    const q = document.getElementById(inputId).value;
-    if (!q.trim()) return;
-
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (data.length === 0) {
-      alert("No se encontró la dirección.");
-      return;
-    }
-
-    const lat = parseFloat(data[0].lat);
-    const lon = parseFloat(data[0].lon);
-
-    map.setView([lat, lon], 16);
-    if (moverCallback) moverCallback(lat, lon);
-  }
-
-  // Ruta
-  document.getElementById("btnBuscarRuta").onclick = () =>
-    buscarDireccion("searchRuta", mapRuta, null);
-
-  // Problema
-  document.getElementById("btnBuscarProblema").onclick = () =>
-    buscarDireccion("searchProblema", mapProblema, moverMarcador);
-
-  /* ============================
-      ENVIAR A FIREBASE (con foto opcional)
-  ============================ */
-
-  document.getElementById("reporteForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const ruta = document.getElementById("rutaGeoJSON").value;
-
-    const presenciaSel = document.querySelector('input[name="presencia"]:checked');
-    const problemaSel  = document.querySelector('input[name="problema"]:checked');
-    const gravedadSel  = document.querySelector('input[name="gravedad"]:checked');
-
-    if (!presenciaSel || !problemaSel || !gravedadSel) {
-      alert("Por favor responde presencia, problema y gravedad.");
-      return;
-    }
-
-    const presencia = presenciaSel.value;
-    const problema  = problemaSel.value;
-    const gravedad  = gravedadSel.value;
-
-    const comentario = document.getElementById("comentario").value;
-    const lat = parseFloat(document.getElementById("latProblema").value);
-    const lng = parseFloat(document.getElementById("lngProblema").value);
-
-    if (!ruta) {
-      alert("Debes dibujar la ruta.");
-      return;
-    }
-    if (isNaN(lat) || isNaN(lng)) {
-      alert("Debes marcar el punto del problema.");
-      return;
-    }
-
-    const fotoFile = document.getElementById("foto").files[0];
-    let fotoURL = null;
-
-    try {
-      // si storage está disponible y hay foto, la subimos;
-      // si falla algo aquí, igualmente seguimos sin foto
-      if (storage && fotoFile) {
-        const nombreSeguro = Date.now() + "_" + fotoFile.name.replace(/\s+/g, "_");
-        const fotoRef = storage.ref().child("fotos/" + nombreSeguro);
-        await fotoRef.put(fotoFile);
-        fotoURL = await fotoRef.getDownloadURL();
-      }
-    } catch (e) {
-      console.error("Error subiendo foto (se enviará sin foto):", e);
-      fotoURL = null;
-    }
-
-    const reporte = {
-      rutaGeoJSON: ruta,
-      presencia,
-      problema,
-      gravedad,
-      comentario,
-      latProblema: lat,
-      lngProblema: lng,
-      fotoURL: fotoURL,
-      estado: "pendiente",
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    /* ============================
+        CONFIGURACIÓN FIREBASE
+    ============================ */
+    const firebaseConfig = {
+      apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
+      authDomain: "ciclovias-3d361.firebaseapp.com",
+      projectId: "ciclovias-3d361",
+      storageBucket: "ciclovias-3d361.appspot.com",
+      messagingSenderId: "94373830982",
+      appId: "1:94373830982:web:afbf251bfc78b9c7744547"
     };
 
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let storage = null;
     try {
-      await db.collection("reportes").add(reporte);
-      alert("Reporte enviado. ¡Gracias por participar!");
-      location.reload();
-    } catch (err) {
-      console.error(err);
-      alert("Error al guardar el reporte.");
+      storage = firebase.storage();
+    } catch (e) {
+      console.error("Storage no disponible:", e);
+      storage = null;
     }
-  });
+
+    /* ============================
+        MAPA DE RUTA
+    ============================ */
+    const mapRuta = L.map("mapRuta").setView([-33.45, -70.66], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapRuta);
+
+    const rutaGroup = new L.FeatureGroup().addTo(mapRuta);
+    document.getElementById("rutaGeoJSON").value = "";
+
+    const drawControl = new L.Control.Draw({
+      draw: {
+        polyline: true,
+        polygon: false,
+        marker: false,
+        rectangle: false,
+        circle: false,
+        circlemarker: false
+      },
+      edit: {
+        featureGroup: rutaGroup,
+        remove: true
+      }
+    });
+
+    mapRuta.addControl(drawControl);
+
+    mapRuta.on("draw:created", (e) => {
+      rutaGroup.clearLayers();
+      rutaGroup.addLayer(e.layer);
+      document.getElementById("rutaGeoJSON").value = JSON.stringify(e.layer.toGeoJSON());
+    });
+
+    /* ============================
+        MAPA DEL PROBLEMA
+    ============================ */
+    const mapProblema = L.map("mapProblema").setView([-33.45, -70.66], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(mapProblema);
+
+    let marcadorProblema = null;
+
+    function moverMarcador(lat, lon) {
+      document.getElementById("latProblema").value = lat.toFixed(6);
+      document.getElementById("lngProblema").value = lon.toFixed(6);
+
+      if (!marcadorProblema) {
+        marcadorProblema = L.marker([lat, lon], { draggable: true }).addTo(mapProblema);
+        marcadorProblema.on("dragend", (ev) => {
+          moverMarcador(ev.target.getLatLng().lat, ev.target.getLatLng().lng);
+        });
+      } else {
+        marcadorProblema.setLatLng([lat, lon]);
+      }
+    }
+
+    mapProblema.on("click", (e) => moverMarcador(e.latlng.lat, e.latlng.lng));
+
+    /* ============================
+        BUSCADORES: RUTA + PROBLEMA
+    ============================ */
+
+    async function buscarDireccion(inputId, map, moverCallback) {
+      const q = document.getElementById(inputId).value;
+      if (!q.trim()) return;
+
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.length === 0) {
+        alert("No se encontró la dirección.");
+        return;
+      }
+
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+
+      map.setView([lat, lon], 16);
+      if (moverCallback) moverCallback(lat, lon);
+    }
+
+    // Ruta
+    document.getElementById("btnBuscarRuta").onclick = () =>
+      buscarDireccion("searchRuta", mapRuta, null);
+
+    // Problema
+    document.getElementById("btnBuscarProblema").onclick = () =>
+      buscarDireccion("searchProblema", mapProblema, moverMarcador);
+
+    /* ============================
+        ENVIAR A FIREBASE (con foto opcional)
+    ============================ */
+
+    const form = document.getElementById("reporteForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const ruta = document.getElementById("rutaGeoJSON").value;
+
+      const presenciaSel = document.querySelector('input[name="presencia"]:checked');
+      const problemaSel  = document.querySelector('input[name="problema"]:checked');
+      const gravedadSel  = document.querySelector('input[name="gravedad"]:checked');
+
+      if (!presenciaSel || !problemaSel || !gravedadSel) {
+        alert("Por favor responde presencia, problema y gravedad.");
+        return;
+      }
+
+      const presencia = presenciaSel.value;
+      const problema  = problemaSel.value;
+      const gravedad  = gravedadSel.value;
+
+      const comentario = document.getElementById("comentario").value;
+      const lat = parseFloat(document.getElementById("latProblema").value);
+      const lng = parseFloat(document.getElementById("lngProblema").value);
+
+      if (!ruta) {
+        alert("Debes dibujar la ruta.");
+        return;
+      }
+      if (isNaN(lat) || isNaN(lng)) {
+        alert("Debes marcar el punto del problema.");
+        return;
+      }
+
+      const fotoFile = document.getElementById("foto").files[0];
+      let fotoURL = null;
+
+      try {
+        // si storage está disponible y hay foto, la subimos;
+        // si falla algo aquí, igualmente seguimos sin foto
+        if (storage && fotoFile) {
+          const nombreSeguro = Date.now() + "_" + fotoFile.name.replace(/\s+/g, "_");
+          const fotoRef = storage.ref().child("fotos/" + nombreSeguro);
+          await fotoRef.put(fotoFile);
+          fotoURL = await fotoRef.getDownloadURL();
+        }
+      } catch (e) {
+        console.error("Error subiendo foto (se enviará sin foto):", e);
+        fotoURL = null;
+      }
+
+      const reporte = {
+        rutaGeoJSON: ruta,
+        presencia,
+        problema,
+        gravedad,
+        comentario,
+        latProblema: lat,
+        lngProblema: lng,
+        fotoURL: fotoURL,
+        estado: "pendiente",
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      try {
+        await db.collection("reportes").add(reporte);
+        alert("Reporte enviado. ¡Gracias por participar!");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        alert("Error al guardar el reporte.");
+      }
+    });
+
+  }); // fin window.load
 </script>
 </body>
 </html>
+
 
