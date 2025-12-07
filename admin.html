@@ -73,6 +73,9 @@
       margin-bottom: 1rem;
       color: #555;
     }
+    a {
+      color: #26689c;
+    }
   </style>
 </head>
 <body>
@@ -92,6 +95,7 @@
         <th>Gravedad</th>
         <th>Coordenadas</th>
         <th>Comentario</th>
+        <th>Foto</th>
         <th>Estado</th>
         <th>Acciones</th>
       </tr>
@@ -124,6 +128,11 @@
     const fila = document.createElement("tr");
     const estado = data.estado || "pendiente";
 
+    const tieneFoto = !!data.fotoURL;
+    const celdaFoto = tieneFoto
+      ? `<a href="${data.fotoURL}" target="_blank">Ver foto</a>`
+      : "Sin foto";
+
     fila.dataset.id = id;
     fila.innerHTML = `
       <td>${data.problema}</td>
@@ -131,6 +140,7 @@
       <td>${data.gravedad}</td>
       <td>${data.latProblema?.toFixed(4)}, ${data.lngProblema?.toFixed(4)}</td>
       <td>${data.comentario || "Sin comentario"}</td>
+      <td>${celdaFoto}</td>
       <td><span class="estado-tag ${estado}">${estado}</span></td>
       <td>
         <button class="btn-aprobar" data-accion="aprobar">Aprobar</button>
@@ -157,7 +167,9 @@
         if (cambio.type === "modified") {
           const filaVieja = tabla.querySelector(`tr[data-id="${id}"]`);
           const filaNueva = crearFila(id, data);
-          tabla.replaceChild(filaNueva, filaVieja);
+          if (filaVieja) {
+            tabla.replaceChild(filaNueva, filaVieja);
+          }
         }
       });
     });
@@ -176,6 +188,7 @@
     try {
       await db.collection("reportes").doc(id).update({ estado: nuevoEstado });
     } catch (err) {
+      console.error(err);
       alert("Error al actualizar estado.");
     }
   });
@@ -183,3 +196,4 @@
 
 </body>
 </html>
+
