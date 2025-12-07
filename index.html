@@ -194,7 +194,7 @@
         <div id="mapProblema"></div>
       </section>
 
-      <button type="submit">Enviar reporte</button>
+      <button type="submit" id="btnEnviar">Enviar reporte</button>
     </form>
   </section>
 
@@ -210,7 +210,6 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
 <script>
-  // Espero a que cargue TODO el DOM antes de correr el JS
   window.addEventListener("load", () => {
 
     /* ============================
@@ -227,6 +226,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
     let storage = null;
     try {
       storage = firebase.storage();
@@ -292,9 +292,8 @@
     mapProblema.on("click", (e) => moverMarcador(e.latlng.lat, e.latlng.lng));
 
     /* ============================
-        BUSCADORES: RUTA + PROBLEMA
+        BUSCADORES
     ============================ */
-
     async function buscarDireccion(inputId, map, moverCallback) {
       const q = document.getElementById(inputId).value;
       if (!q.trim()) return;
@@ -315,19 +314,18 @@
       if (moverCallback) moverCallback(lat, lon);
     }
 
-    // Ruta
     document.getElementById("btnBuscarRuta").onclick = () =>
       buscarDireccion("searchRuta", mapRuta, null);
 
-    // Problema
     document.getElementById("btnBuscarProblema").onclick = () =>
       buscarDireccion("searchProblema", mapProblema, moverMarcador);
 
     /* ============================
-        ENVIAR A FIREBASE (con foto opcional)
+        ENVIAR A FIREBASE (con foto)
     ============================ */
-
     const form = document.getElementById("reporteForm");
+    const btnEnviar = document.getElementById("btnEnviar");
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -362,45 +360,54 @@
       const fotoFile = document.getElementById("foto").files[0];
       let fotoURL = null;
 
+      // feedback visual
+      btnEnviar.disabled = true;
+      btnEnviar.textContent = "Enviando...";
+
       try {
-        // si storage está disponible y hay foto, la subimos;
-        // si falla algo aquí, igualmente seguimos sin foto
-        if (storage && fotoFile) {
-          const nombreSeguro = Date.now() + "_" + fotoFile.name.replace(/\s+/g, "_");
-          const fotoRef = storage.ref().child("fotos/" + nombreSeguro);
-          await fotoRef.put(fotoFile);
-          fotoURL = await fotoRef.getDownloadURL();
+        // 1) Intentamos subir la foto (si hay y storage está disponible)
+        if (fotoFile && storage) {
+          try {
+            const nombreSeguro = Date.now() + "_" + fotoFile.name.replace(/\s+/g, "_");
+            const fotoRef = storage.ref().child("fotos/" + nombreSeguro);
+            await fotoRef.put(fotoFile);
+            fotoURL = await fotoRef.getDownloadURL();
+          } catch (errFoto) {
+            console.error("Error subiendo foto, se enviará sin foto:", errFoto);
+            alert("No se pudo subir la foto. El reporte se enviará sin foto igualmente.");
+            fotoURL = null;
+          }
+        } else if (fotoFile && !storage) {
+          alert("La foto no se puede guardar porque Firebase Storage no está disponible. El reporte se enviará sin foto.");
         }
-      } catch (e) {
-        console.error("Error subiendo foto (se enviará sin foto):", e);
-        fotoURL = null;
-      }
 
-      const reporte = {
-        rutaGeoJSON: ruta,
-        presencia,
-        problema,
-        gravedad,
-        comentario,
-        latProblema: lat,
-        lngProblema: lng,
-        fotoURL: fotoURL,
-        estado: "pendiente",
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      };
+        // 2) Enviamos el reporte a Firestore (siempre)
+        const reporte = {
+          rutaGeoJSON: ruta,
+          presencia,
+          problema,
+          gravedad,
+          comentario,
+          latProblema: lat,
+          lngProblema: lng,
+          fotoURL: fotoURL,
+          estado: "pendiente",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
-      try {
         await db.collection("reportes").add(reporte);
         alert("Reporte enviado. ¡Gracias por participar!");
         location.reload();
       } catch (err) {
         console.error(err);
         alert("Error al guardar el reporte.");
+      } finally {
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = "Enviar reporte";
       }
     });
 
-  }); // fin window.load
+  });
 </script>
 </body>
 </html>
-
