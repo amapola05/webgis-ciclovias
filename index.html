@@ -67,6 +67,7 @@
       padding: 0.35rem;
       border-radius: 4px;
       border: 1px solid #ccc;
+      box-sizing: border-box;
     }
 
     .search-container button {
@@ -172,7 +173,6 @@
 
       <label>Fotografía del lugar (opcional)</label>
       <input id="foto" type="file" accept="image/*" />
-      <!-- OJO: de momento solo se muestra, no se guarda en Firebase -->
 
       <!-- BLOQUE: Punto del problema -->
       <section class="bloque">
@@ -207,6 +207,7 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 
 <script>
   /* ============================
@@ -223,6 +224,7 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  const storage = firebase.storage();
 
   /* ============================
       MAPA DE RUTA
@@ -313,7 +315,7 @@
     buscarDireccion("searchProblema", mapProblema, moverMarcador);
 
   /* ============================
-      ENVIAR A FIREBASE
+      ENVIAR A FIREBASE (con foto)
   ============================ */
 
   document.getElementById("reporteForm").addEventListener("submit", async (e) => {
@@ -347,20 +349,31 @@
       return;
     }
 
-    const reporte = {
-      rutaGeoJSON: ruta,
-      presencia,
-      problema,
-      gravedad,
-      comentario,
-      latProblema: lat,
-      lngProblema: lng,
-      estado: "pendiente",
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      // la foto no se guarda aún
-    };
+    // FOTO (opcional)
+    const fotoFile = document.getElementById("foto").files[0];
+    let fotoURL = null;
 
     try {
+      if (fotoFile) {
+        const nombreSeguro = Date.now() + "_" + fotoFile.name.replace(/\s+/g, "_");
+        const fotoRef = storage.ref().child("fotos/" + nombreSeguro);
+        await fotoRef.put(fotoFile);
+        fotoURL = await fotoRef.getDownloadURL();
+      }
+
+      const reporte = {
+        rutaGeoJSON: ruta,
+        presencia,
+        problema,
+        gravedad,
+        comentario,
+        latProblema: lat,
+        lngProblema: lng,
+        fotoURL: fotoURL, // puede ser null si no subieron foto
+        estado: "pendiente",
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
       await db.collection("reportes").add(reporte);
       alert("Reporte enviado. ¡Gracias por participar!");
       location.reload(); // limpia todo
