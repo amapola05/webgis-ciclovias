@@ -224,7 +224,13 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-  const storage = firebase.storage();
+  let storage = null;
+  try {
+    storage = firebase.storage();
+  } catch (e) {
+    console.error("Storage no disponible:", e);
+    storage = null;
+  }
 
   /* ============================
       MAPA DE RUTA
@@ -315,7 +321,7 @@
     buscarDireccion("searchProblema", mapProblema, moverMarcador);
 
   /* ============================
-      ENVIAR A FIREBASE (con foto)
+      ENVIAR A FIREBASE (con foto opcional)
   ============================ */
 
   document.getElementById("reporteForm").addEventListener("submit", async (e) => {
@@ -349,34 +355,40 @@
       return;
     }
 
-    // FOTO (opcional)
     const fotoFile = document.getElementById("foto").files[0];
     let fotoURL = null;
 
     try {
-      if (fotoFile) {
+      // si storage está disponible y hay foto, la subimos;
+      // si falla algo aquí, igualmente seguimos sin foto
+      if (storage && fotoFile) {
         const nombreSeguro = Date.now() + "_" + fotoFile.name.replace(/\s+/g, "_");
         const fotoRef = storage.ref().child("fotos/" + nombreSeguro);
         await fotoRef.put(fotoFile);
         fotoURL = await fotoRef.getDownloadURL();
       }
+    } catch (e) {
+      console.error("Error subiendo foto (se enviará sin foto):", e);
+      fotoURL = null;
+    }
 
-      const reporte = {
-        rutaGeoJSON: ruta,
-        presencia,
-        problema,
-        gravedad,
-        comentario,
-        latProblema: lat,
-        lngProblema: lng,
-        fotoURL: fotoURL, // puede ser null si no subieron foto
-        estado: "pendiente",
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      };
+    const reporte = {
+      rutaGeoJSON: ruta,
+      presencia,
+      problema,
+      gravedad,
+      comentario,
+      latProblema: lat,
+      lngProblema: lng,
+      fotoURL: fotoURL,
+      estado: "pendiente",
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
+    try {
       await db.collection("reportes").add(reporte);
       alert("Reporte enviado. ¡Gracias por participar!");
-      location.reload(); // limpia todo
+      location.reload();
     } catch (err) {
       console.error(err);
       alert("Error al guardar el reporte.");
