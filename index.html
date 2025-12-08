@@ -86,7 +86,6 @@
     }
 
     input[type="text"],
-    input[type="url"],
     textarea {
       width: 100%;
       padding: 0.4rem;
@@ -117,11 +116,6 @@
 
     button[type="submit"]:hover {
       background: #1f567f;
-    }
-
-    .ayuda-link {
-      font-size: 0.8rem;
-      color: #555;
     }
   </style>
 </head>
@@ -176,11 +170,8 @@
       <label>Observación o comentario</label>
       <textarea id="comentario" rows="2"></textarea>
 
-      <label>Enlace a fotografía del lugar (opcional)</label>
-      <input id="linkFoto" type="url" placeholder="https://drive.google.com/..." />
-      <span class="ayuda-link">
-        Puedes subir una foto a Drive, Dropbox u otra plataforma y pegar aquí el enlace público.
-      </span>
+      <label>Link a fotografía del lugar (opcional)</label>
+      <input id="linkFoto" type="text" placeholder="https://drive.google.com/..." />
 
       <!-- BLOQUE: Punto del problema -->
       <section class="bloque">
@@ -212,7 +203,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
-<!-- Firebase -->
+<!-- Firebase (proyecto ciclovias-3d361) -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
@@ -320,57 +311,48 @@
   document.getElementById("btnBuscarProblema").onclick = () =>
     buscarDireccion("searchProblema", mapProblema, moverMarcador);
 
-  /* Ubicación actual (simple) */
-  function centrarEnUbicacion(map, moverCallback) {
+  // Ubicación actual (si el navegador lo permite)
+  function irALocalizacionActual(map, moverCallback) {
     if (!navigator.geolocation) {
-      alert("El navegador no soporta geolocalización.");
+      alert("Tu navegador no permite obtener la ubicación.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
-        map.setView([lat, lon], 16);
+        map.setView([lat, lon], 15);
         if (moverCallback) moverCallback(lat, lon);
       },
-      () => alert("No se pudo obtener la ubicación.")
+      () => alert("No se pudo obtener tu ubicación.")
     );
   }
 
   document.getElementById("btnUbicacionRuta").onclick = () =>
-    centrarEnUbicacion(mapRuta, null);
+    irALocalizacionActual(mapRuta, null);
 
   document.getElementById("btnUbicacionProblema").onclick = () =>
-    centrarEnUbicacion(mapProblema, moverMarcador);
+    irALocalizacionActual(mapProblema, moverMarcador);
 
   /* ============================
-      OBTENER REGIÓN / CIUDAD
+      OBTENER REGIÓN Y CIUDAD
+      (reverse geocoding)
   ============================ */
 
-  async function obtenerRegionCiudad(lat, lon) {
+  async function obtenerRegionCiudad(lat, lng) {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&addressdetails=1`;
-      const res = await fetch(url, {
-        headers: { "Accept-Language": "es" }
-      });
+      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`;
+      const res = await fetch(url);
       const data = await res.json();
       const addr = data.address || {};
-
-      const region =
-        addr.state || addr.region || "";
-
       const ciudad =
-        addr.city ||
-        addr.town ||
-        addr.village ||
-        addr.municipality ||
-        addr.suburb ||
-        "";
-
+        addr.city || addr.town || addr.village || addr.hamlet || "Desconocida";
+      const region =
+        addr.state || addr.region || addr.province || "Desconocida";
       return { region, ciudad };
     } catch (e) {
       console.error("Error obteniendo región/ciudad:", e);
-      return { region: "", ciudad: "" };
+      return { region: "Desconocida", ciudad: "Desconocida" };
     }
   }
 
@@ -397,7 +379,7 @@
     const gravedad  = gravedadSel.value;
 
     const comentario = document.getElementById("comentario").value;
-    const linkFoto  = document.getElementById("linkFoto").value.trim();
+    const linkFoto   = document.getElementById("linkFoto").value.trim();
     const lat = parseFloat(document.getElementById("latProblema").value);
     const lng = parseFloat(document.getElementById("lngProblema").value);
 
@@ -410,7 +392,7 @@
       return;
     }
 
-    // Región y ciudad automáticas
+    // Región y ciudad automáticas a partir del punto
     const { region, ciudad } = await obtenerRegionCiudad(lat, lng);
 
     const reporte = {
@@ -422,8 +404,8 @@
       linkFoto: linkFoto || null,
       latProblema: lat,
       lngProblema: lng,
-      region: region || null,
-      ciudad: ciudad || null,
+      region,
+      ciudad,
       estado: "pendiente",
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     };
@@ -440,5 +422,6 @@
 </script>
 </body>
 </html>
+
 
 
