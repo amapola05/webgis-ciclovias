@@ -5,7 +5,18 @@
   <title>Mapa de reportes validados de ciclovías</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
   <style>
     body {
@@ -16,13 +27,13 @@
 
     header {
       background: #26689c;
-      color: white;
-      padding: 0.7rem 1rem;
+      color: #fff;
+      padding: 0.8rem 1.2rem;
     }
 
     header h1 {
       margin: 0;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
     }
 
     header p {
@@ -38,118 +49,115 @@
     }
 
     .layout {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
       gap: 1rem;
       align-items: flex-start;
-      flex-wrap: wrap;
     }
 
     .card {
-      background: white;
+      background: #fff;
       border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      padding: 0.8rem 1rem 1rem;
-    }
-
-    .map-card {
-      flex: 2 1 60%;
-      min-width: 300px;
-    }
-
-    .side-card {
-      flex: 1 1 30%;
-      min-width: 260px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      padding: 0.75rem;
     }
 
     #map {
       width: 100%;
-      height: 480px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      height: 520px;
+      border-radius: 8px;
     }
 
+    .legend {
+      position: absolute;
+      left: 16px;
+      bottom: 20px;
+      z-index: 1000;
+      background: #fff;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      font-size: 0.8rem;
+    }
+    .legend h4 {
+      margin: 0 0 0.25rem;
+      font-size: 0.85rem;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0.1rem 0;
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Panel filtros */
     h2 {
       margin-top: 0;
       font-size: 1rem;
     }
 
-    .filtros label {
+    label {
       display: block;
+      margin: 0.4rem 0 0.15rem;
       font-size: 0.85rem;
-      margin-top: 0.4rem;
-      margin-bottom: 0.15rem;
       font-weight: 600;
     }
 
-    .filtros select {
+    select {
       width: 100%;
-      padding: 0.3rem;
+      padding: 0.35rem 0.4rem;
       border-radius: 4px;
       border: 1px solid #ccc;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       box-sizing: border-box;
     }
 
     .stats {
-      margin-top: 0.8rem;
-      font-size: 0.9rem;
-    }
-
-    .stats p {
-      margin: 0.2rem 0;
-    }
-
-    .stats strong {
-      font-weight: 600;
-    }
-
-    .leyenda {
-      margin-top: 0.6rem;
+      margin-top: 0.75rem;
       font-size: 0.85rem;
-      background: #f7f9ff;
-      border-radius: 6px;
-      padding: 0.5rem 0.7rem;
-      border: 1px solid #dde5ff;
-      display: inline-block;
-    }
-
-    .leyenda-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 0.2rem;
-    }
-
-    .leyenda-color {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      margin-right: 0.4rem;
-      border: 1px solid #555;
-    }
-
-    .leyenda-linea {
-      width: 14px;
-      height: 3px;
-      margin-right: 0.4rem;
-      background: #007bff;
     }
 
     .badge {
       display: inline-block;
       padding: 0.1rem 0.4rem;
-      border-radius: 4px;
+      border-radius: 10px;
       font-size: 0.75rem;
-      color: white;
-      margin-left: 0.3rem;
+      color: #fff;
+      margin-left: 0.2rem;
+    }
+    .baja   { background:#28a745; }
+    .media  { background:#ffc107; color:#000; }
+    .alta   { background:#dc3545; }
+
+    .help-text {
+      font-size: 0.75rem;
+      color: #555;
+      margin-top: 0.6rem;
     }
 
-    .bajo  { background: #2ecc71; }
-    .medio { background: #f39c12; }
-    .alto  { background: #e74c3c; }
+    .popup-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .popup-row {
+      font-size: 0.8rem;
+      margin: 0.05rem 0;
+    }
+    .popup-row span {
+      font-weight: 600;
+    }
 
     @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
       #map {
-        height: 400px;
+        height: 420px;
       }
     }
   </style>
@@ -162,75 +170,78 @@
 
 <main>
   <div class="layout">
-    <section class="card map-card">
+    <!-- MAPA -->
+    <div class="card" style="position:relative;">
       <div id="map"></div>
 
-      <div class="leyenda">
-        <strong>Leyenda</strong>
-        <div class="leyenda-item">
-          <span class="leyenda-color" style="background:#2ecc71;"></span> Problema gravedad baja
+      <!-- Leyenda -->
+      <div class="legend">
+        <h4>Leyenda</h4>
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#28a745;"></span>
+          <span>Problema gravedad baja</span>
         </div>
-        <div class="leyenda-item">
-          <span class="leyenda-color" style="background:#f39c12;"></span> Problema gravedad media
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#ffc107;"></span>
+          <span>Problema gravedad media</span>
         </div>
-        <div class="leyenda-item">
-          <span class="leyenda-color" style="background:#e74c3c;"></span> Problema gravedad alta
+        <div class="legend-item">
+          <span class="legend-dot" style="background:#dc3545;"></span>
+          <span>Problema gravedad alta</span>
         </div>
-        <div class="leyenda-item">
-          <span class="leyenda-linea"></span> Ruta declarada por la persona
+        <div class="legend-item">
+          <span style="width:18px;height:2px;background:#007bff;"></span>
+          <span>Ruta declarada por la persona</span>
         </div>
       </div>
-    </section>
+    </div>
 
-    <aside class="card side-card">
+    <!-- PANEL FILTROS -->
+    <div class="card">
       <h2>Filtros y resumen</h2>
 
-      <div class="filtros">
-        <label for="filtroRegion">Región</label>
-        <select id="filtroRegion">
-          <option value="">Todas las regiones</option>
-        </select>
+      <label for="selectRegion">Región</label>
+      <select id="selectRegion">
+        <option value="TODAS">Todas las regiones</option>
+      </select>
 
-        <label for="filtroCiudad">Ciudad / comuna</label>
-        <select id="filtroCiudad">
-          <option value="">Todas las ciudades</option>
-        </select>
-      </div>
+      <label for="selectCiudad">Ciudad / comuna</label>
+      <select id="selectCiudad">
+        <option value="TODAS">Todas las ciudades</option>
+      </select>
 
       <div class="stats">
-        <p><strong>Reportes mostrados:</strong> <span id="statTotal">0</span></p>
-        <p>
-          <strong>Gravedad baja:</strong> <span id="statBaja">0</span>
-          <span class="badge bajo">Baja</span>
-        </p>
-        <p>
-          <strong>Gravedad media:</strong> <span id="statMedia">0</span>
-          <span class="badge medio">Media</span>
-        </p>
-        <p>
-          <strong>Gravedad alta:</strong> <span id="statAlta">0</span>
-          <span class="badge alto">Alta</span>
-        </p>
+        <div>Reportes mostrados: <span id="statTotal">0</span></div>
+        <div>
+          Gravedad baja:
+          <span id="statBaja">0</span>
+          <span class="badge baja">Baja</span>
+        </div>
+        <div>
+          Gravedad media:
+          <span id="statMedia">0</span>
+          <span class="badge media">Media</span>
+        </div>
+        <div>
+          Gravedad alta:
+          <span id="statAlta">0</span>
+          <span class="badge alta">Alta</span>
+        </div>
       </div>
 
-      <p style="font-size:0.8rem; margin-top:0.8rem; color:#666;">
-        Los filtros aplican solo a los reportes validados. Puedes usarlos para
-        revisar situaciones particulares en una región o ciudad específica.
+      <p class="help-text">
+        Los filtros aplican solo a los reportes validados. Puedes usarlos
+        para revisar situaciones particulares en una región o ciudad específica.
       </p>
-    </aside>
+    </div>
   </div>
 </main>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
 <script>
-  /* ============================
-      CONFIGURACIÓN FIREBASE
-  ============================ */
+  // =========================
+  //  CONFIGURACIÓN FIREBASE
+  //  (mismo proyecto ciclovias)
+  // =========================
   const firebaseConfig = {
     apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
     authDomain: "ciclovias-3d361.firebaseapp.com",
@@ -243,215 +254,243 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  /* ============================
-      MAPA
-  ============================ */
-  const map = L.map('map').setView([-36.5, -71], 5.2);
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap'
+  // =========================
+  //  MAPA
+  // =========================
+  const map = L.map("map").setView([-35, -70], 5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap"
   }).addTo(map);
 
-  const capaRutas  = L.featureGroup().addTo(map);
-  const capaPuntos = L.featureGroup().addTo(map);
+  const capaReportes = L.layerGroup().addTo(map);
 
-  /* ============================
-      DOM ELEMENTOS
-  ============================ */
-  const filtroRegion = document.getElementById('filtroRegion');
-  const filtroCiudad = document.getElementById('filtroCiudad');
+  // =========================
+  //  ESTADO
+  // =========================
+  let todosReportes = []; // todos los aprobados
+  const selectRegion = document.getElementById("selectRegion");
+  const selectCiudad = document.getElementById("selectCiudad");
 
-  const statTotal = document.getElementById('statTotal');
-  const statBaja  = document.getElementById('statBaja');
-  const statMedia = document.getElementById('statMedia');
-  const statAlta  = document.getElementById('statAlta');
+  const statTotal = document.getElementById("statTotal");
+  const statBaja  = document.getElementById("statBaja");
+  const statMedia = document.getElementById("statMedia");
+  const statAlta  = document.getElementById("statAlta");
 
-  /* ============================
-      DATOS EN MEMORIA
-  ============================ */
-  let reportes = []; // todos los aprobados
+  // =========================
+  //  FUNCIONES AUXILIARES
+  // =========================
 
-  /* ============================
-      UTILIDAD: ESTILO MARCADORES
-  ============================ */
-  function colorPorGravedad(gravedad) {
-    if (!gravedad) return '#777';
-    const g = gravedad.toLowerCase();
-    if (g === 'bajo' || g === 'baja') return '#2ecc71';
-    if (g === 'medio' || g === 'media') return '#f39c12';
-    if (g === 'alto' || g === 'alta') return '#e74c3c';
-    return '#777';
+  function obtenerColorGravedad(g) {
+    if (!g) return "#888";
+    const val = g.toLowerCase();
+    if (val.startsWith("bajo"))  return "#28a745";
+    if (val.startsWith("medio")) return "#ffc107";
+    if (val.startsWith("alto"))  return "#dc3545";
+    return "#888";
   }
 
-  /* ============================
-      RENDERIZAR MAPA SEGÚN FILTRO
-  ============================ */
-  function renderMapa() {
-    capaRutas.clearLayers();
-    capaPuntos.clearLayers();
-
-    const regionSel = filtroRegion.value || "";
-    const ciudadSel = filtroCiudad.value || "";
-
-    let total = 0, baja = 0, media = 0, alta = 0;
-    const bounds = [];
-
-    reportes.forEach(rep => {
-      if (regionSel && rep.region !== regionSel) return;
-      if (ciudadSel && rep.ciudad !== ciudadSel) return;
-
-      const lat = rep.latProblema;
-      const lng = rep.lngProblema;
-      if (typeof lat !== 'number' || typeof lng !== 'number') return;
-
-      total++;
-      const g = (rep.gravedad || "").toLowerCase();
-      if (g === 'bajo' || g === 'baja') baja++;
-      else if (g === 'medio' || g === 'media') media++;
-      else if (g === 'alto' || g === 'alta') alta++;
-
-      const color = colorPorGravedad(rep.gravedad);
-
-      // Punto
-      const marker = L.circleMarker([lat, lng], {
-        radius: 7,
-        color: '#333',
-        weight: 1,
-        fillColor: color,
-        fillOpacity: 0.9
-      }).addTo(capaPuntos);
-
-      const popupHtml = `
-        <strong>${rep.problema || "Problema no especificado"}</strong><br/>
-        Gravedad: <em>${rep.gravedad || "Sin dato"}</em><br/>
-        Presencia de ciclovía: <em>${rep.presencia || "Sin dato"}</em><br/>
-        Región: <em>${rep.region || "Sin dato"}</em><br/>
-        Ciudad/comuna: <em>${rep.ciudad || "Sin dato"}</em><br/>
-        Coordenadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}<br/>
-        Comentario: ${rep.comentario || "Sin comentario"}<br/>
-        ${rep.linkFoto ? `<a href="${rep.linkFoto}" target="_blank">Ver fotografía</a>` : ""}
-      `;
-
-      marker.bindPopup(popupHtml);
-
-      // Ruta (si existe)
-      if (rep.rutaGeoJSON) {
-        try {
-          const geo = JSON.parse(rep.rutaGeoJSON);
-          const linea = L.geoJSON(geo, {
-            style: { color: '#007bff', weight: 4 }
-          }).addTo(capaRutas);
-          if (linea.getBounds) {
-            bounds.push(linea.getBounds());
-          }
-        } catch (e) {
-          console.warn("Error al leer rutaGeoJSON de un reporte:", e);
-        }
-      }
-
-      bounds.push(L.latLng(lat, lng));
-    });
-
-    // Actualizar estadísticas
-    statTotal.textContent = total;
-    statBaja.textContent  = baja;
-    statMedia.textContent = media;
-    statAlta.textContent  = alta;
-
-    // Ajustar vista
-    if (bounds.length > 0) {
-      const mixBounds = bounds.reduce((acc, b) => {
-        if (b instanceof L.LatLngBounds) return acc.extend(b);
-        return acc.extend(b);
-      }, L.latLngBounds(bounds[0], bounds[0]));
-      map.fitBounds(mixBounds, { padding: [30, 30] });
-    } else {
-      map.setView([-36.5, -71], 5.2);
-    }
-  }
-
-  /* ============================
-      POBLAR FILTROS
-  ============================ */
   function poblarFiltros() {
     const regiones = new Set();
     const ciudadesPorRegion = {};
 
-    reportes.forEach(r => {
-      if (!r.region) return;
-      regiones.add(r.region);
-      if (!ciudadesPorRegion[r.region]) ciudadesPorRegion[r.region] = new Set();
-      if (r.ciudad) ciudadesPorRegion[r.region].add(r.ciudad);
+    todosReportes.forEach(r => {
+      const reg = r.region || "Sin región";
+      const ciu = r.ciudad || "Sin ciudad";
+
+      regiones.add(reg);
+      if (!ciudadesPorRegion[reg]) {
+        ciudadesPorRegion[reg] = new Set();
+      }
+      ciudadesPorRegion[reg].add(ciu);
     });
 
     // Región
-    const regionActual = filtroRegion.value || "";
-    filtroRegion.innerHTML = '<option value="">Todas las regiones</option>';
+    selectRegion.innerHTML = '<option value="TODAS">Todas las regiones</option>';
     Array.from(regiones).sort().forEach(reg => {
-      const opt = document.createElement('option');
+      const opt = document.createElement("option");
       opt.value = reg;
       opt.textContent = reg;
-      filtroRegion.appendChild(opt);
-    });
-    if (regionActual) filtroRegion.value = regionActual;
-
-    // Ciudad según región seleccionada
-    poblarCiudades(ciudadesPorRegion);
-  }
-
-  function poblarCiudades(ciudadesPorRegion) {
-    const regionSel = filtroRegion.value || "";
-    const ciudadActual = filtroCiudad.value || "";
-
-    filtroCiudad.innerHTML = '<option value="">Todas las ciudades</option>';
-
-    if (!regionSel || !ciudadesPorRegion[regionSel]) return;
-
-    Array.from(ciudadesPorRegion[regionSel]).sort().forEach(ci => {
-      const opt = document.createElement('option');
-      opt.value = ci;
-      opt.textContent = ci;
-      filtroCiudad.appendChild(opt);
+      selectRegion.appendChild(opt);
     });
 
-    if (ciudadActual) filtroCiudad.value = ciudadActual;
+    // Ciudad (todas al inicio)
+    actualizarCiudades();
   }
 
-  filtroRegion.addEventListener('change', () => {
-    // Rehacer ciudades y refrescar mapa
-    poblarFiltros(); // vuelve a construir ciudades con la nueva región
-    renderMapa();
-  });
+  function actualizarCiudades() {
+    const regionSel = selectRegion.value;
+    selectCiudad.innerHTML =
+      '<option value="TODAS">Todas las ciudades</option>';
 
-  filtroCiudad.addEventListener('change', () => {
-    renderMapa();
-  });
+    let ciudadesSet = new Set();
 
-  /* ============================
-      LEER DATOS DE FIRESTORE
-  ============================ */
+    todosReportes.forEach(r => {
+      if (regionSel !== "TODAS" && r.region !== regionSel) return;
+      const ciu = r.ciudad || "Sin ciudad";
+      ciudadesSet.add(ciu);
+    });
+
+    Array.from(ciudadesSet).sort().forEach(ciu => {
+      const opt = document.createElement("option");
+      opt.value = ciu;
+      opt.textContent = ciu;
+      selectCiudad.appendChild(opt);
+    });
+  }
+
+  function aplicarFiltros() {
+    const regionSel = selectRegion.value;
+    const ciudadSel = selectCiudad.value;
+
+    let filtrados = todosReportes.slice();
+
+    if (regionSel !== "TODAS") {
+      filtrados = filtrados.filter(r => r.region === regionSel);
+    }
+    if (ciudadSel !== "TODAS") {
+      filtrados = filtrados.filter(r => (r.ciudad || "Sin ciudad") === ciudadSel);
+    }
+
+    dibujarEnMapa(filtrados);
+    actualizarEstadisticas(filtrados);
+  }
+
+  function actualizarEstadisticas(lista) {
+    statTotal.textContent = lista.length;
+
+    let cBaja = 0, cMedia = 0, cAlta = 0;
+    lista.forEach(r => {
+      if (!r.gravedad) return;
+      const g = r.gravedad.toLowerCase();
+      if (g.startsWith("bajo"))  cBaja++;
+      else if (g.startsWith("medio")) cMedia++;
+      else if (g.startsWith("alto"))  cAlta++;
+    });
+
+    statBaja.textContent  = cBaja;
+    statMedia.textContent = cMedia;
+    statAlta.textContent  = cAlta;
+  }
+
+  function dibujarEnMapa(lista) {
+    capaReportes.clearLayers();
+
+    const bounds = L.latLngBounds();
+
+    lista.forEach(r => {
+      // 1) Ruta GeoJSON (puede venir como texto o como objeto)
+      if (r.rutaGeoJSON) {
+        let ruta = null;
+        try {
+          if (typeof r.rutaGeoJSON === "string") {
+            ruta = JSON.parse(r.rutaGeoJSON);
+          } else {
+            ruta = r.rutaGeoJSON;
+          }
+        } catch (e) {
+          console.error("Ruta inválida para reporte", r, e);
+          ruta = null;
+        }
+
+        if (ruta) {
+          const capaRuta = L.geoJSON(ruta, {
+            style: { color: "#007bff", weight: 4 }
+          }).addTo(capaReportes);
+
+          try {
+            capaRuta.getLayers().forEach(l => {
+              if (l.getLatLngs) {
+                const pts = l.getLatLngs().flat(Infinity);
+                pts.forEach(p => bounds.extend(p));
+              }
+            });
+          } catch (e) {
+            // si falla, no hacemos nada especial
+          }
+        }
+      }
+
+      // 2) Punto del problema
+      if (typeof r.latProblema === "number" &&
+          typeof r.lngProblema === "number") {
+
+        const color = obtenerColorGravedad(r.gravedad);
+        const marker = L.circleMarker(
+          [r.latProblema, r.lngProblema],
+          {
+            radius: 7,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.9
+          }
+        ).addTo(capaReportes);
+
+        bounds.extend([r.latProblema, r.lngProblema]);
+
+        // Popup
+        let html = "";
+        html += `<div class="popup-title">${r.problema || "Problema reportado"}</div>`;
+        html += `<div class="popup-row"><span>Gravedad:</span> ${r.gravedad || "-"}</div>`;
+        html += `<div class="popup-row"><span>Presencia ciclovía:</span> ${r.presencia || "-"}</div>`;
+        html += `<div class="popup-row"><span>Ciudad:</span> ${r.ciudad || "-"}</div>`;
+        html += `<div class="popup-row"><span>Región:</span> ${r.region || "-"}</div>`;
+        if (r.comentario) {
+          html += `<div class="popup-row"><span>Comentario:</span> ${r.comentario}</div>`;
+        }
+        if (r.linkFoto) {
+          html += `<div class="popup-row"><span>Foto:</span> <a href="${r.linkFoto}" target="_blank" rel="noopener">Ver imagen</a></div>`;
+        }
+
+        marker.bindPopup(html);
+      }
+    });
+
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [20, 20] });
+    } else {
+      map.setView([-35, -70], 5);
+    }
+  }
+
+  // =========================
+  //  CARGA INICIAL
+  // =========================
   db.collection("reportes")
     .where("estado", "==", "aprobado")
-    .orderBy("timestamp", "desc")
-    .onSnapshot((snapshot) => {
-      reportes = [];
-      snapshot.forEach(doc => {
+    .onSnapshot((snap) => {
+      todosReportes = [];
+      snap.forEach(doc => {
         const data = doc.data();
-        // Normalizamos lat/lng a número por si vienen como string
-        if (typeof data.latProblema === 'string') data.latProblema = parseFloat(data.latProblema);
-        if (typeof data.lngProblema === 'string') data.lngProblema = parseFloat(data.lngProblema);
-        reportes.push({
-          id: doc.id,
-          ...data
-        });
+        // Nos aseguramos de que lat/lng sean números
+        if (typeof data.latProblema === "string")
+          data.latProblema = parseFloat(data.latProblema);
+        if (typeof data.lngProblema === "string")
+          data.lngProblema = parseFloat(data.lngProblema);
+
+        todosReportes.push(data);
       });
 
       poblarFiltros();
-      renderMapa();
+      aplicarFiltros();
     }, (err) => {
-      console.error("Error escuchando reportes:", err);
+      console.error("Error leyendo reportes:", err);
+      alert("No se pudieron cargar los reportes desde Firebase.");
     });
+
+  // =========================
+  //  EVENTOS DE FILTRO
+  // =========================
+  selectRegion.addEventListener("change", () => {
+    actualizarCiudades();
+    aplicarFiltros();
+  });
+
+  selectCiudad.addEventListener("change", () => {
+    aplicarFiltros();
+  });
 </script>
 </body>
 </html>
+
 
