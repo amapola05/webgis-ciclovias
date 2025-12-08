@@ -18,7 +18,7 @@
       margin: 0;
     }
     main {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 1rem;
     }
@@ -39,6 +39,7 @@
     th {
       background: #eef3fb;
       font-weight: 600;
+      text-align: left;
     }
     tr:last-child td {
       border-bottom: none;
@@ -97,6 +98,8 @@
         <th>Problema</th>
         <th>Presencia</th>
         <th>Gravedad</th>
+        <th>Región</th>
+        <th>Ciudad / comuna</th>
         <th>Coordenadas</th>
         <th>Comentario</th>
         <th>Foto</th>
@@ -113,7 +116,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
-  // MISMO CONFIG QUE EN index.html (proyecto ciclovias-3d361)
+  // MISMA CONFIG QUE EN index.html y mapa.html
   const firebaseConfig = {
     apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
     authDomain: "ciclovias-3d361.firebaseapp.com",
@@ -132,12 +135,15 @@
     const fila = document.createElement("tr");
     const estado = data.estado || "pendiente";
 
-    const coordTexto = (data.latProblema && data.lngProblema)
-      ? `${data.latProblema.toFixed(4)}, ${data.lngProblema.toFixed(4)}`
-      : "—";
+    const region = data.region || "—";
+    const ciudad = data.ciudad || "—";
 
-    const fotoHTML = data.fotoURL
-      ? `<a href="${data.fotoURL}" target="_blank" class="foto-link">Ver foto</a>`
+    const coordText = (data.latProblema != null && data.lngProblema != null)
+      ? `${data.latProblema.toFixed(4)}, ${data.lngProblema.toFixed(4)}`
+      : "Sin coordenadas";
+
+    const fotoHTML = data.fotoLink
+      ? `<a class="foto-link" href="${data.fotoLink}" target="_blank">Ver foto</a>`
       : "No enviada";
 
     fila.dataset.id = id;
@@ -145,7 +151,9 @@
       <td>${data.problema || ""}</td>
       <td>${data.presencia || ""}</td>
       <td>${data.gravedad || ""}</td>
-      <td>${coordTexto}</td>
+      <td>${region}</td>
+      <td>${ciudad}</td>
+      <td>${coordText}</td>
       <td>${data.comentario || "Sin comentario"}</td>
       <td>${fotoHTML}</td>
       <td><span class="estado-tag ${estado}">${estado}</span></td>
@@ -173,8 +181,8 @@
 
         if (cambio.type === "modified") {
           const filaVieja = tabla.querySelector(`tr[data-id="${id}"]`);
-          const filaNueva = crearFila(id, data);
           if (filaVieja) {
+            const filaNueva = crearFila(id, data);
             tabla.replaceChild(filaNueva, filaVieja);
           }
         }
@@ -203,5 +211,6 @@
 
 </body>
 </html>
+
 
 
