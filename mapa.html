@@ -1,97 +1,226 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Mapa WebGIS – Ciclovías</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Mapa de reportes validados de ciclovías</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-<style>
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-  }
-  header {
-    background: #26689c;
-    color: white;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-  }
-  header small {
-    display: block;
-    font-size: 0.75rem;
-    opacity: 0.9;
-  }
-#map {
-  width: 30%;
-  height: 300px; /* ← antes era 100vh */
-  border: 3px solid #ccc;
-  border-radius: 8px;
-  margin-top: 10px;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #f5f6fa;
+    }
 
-  }
-  .leyenda {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
-    z-index: 1000;
-    background: white;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
-    font-size: 0.8rem;
-  }
-  .leyenda h3 {
-    margin: 0 0 0.25rem 0;
-    font-size: 0.9rem;
-  }
-  .leyenda .item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 0.15rem;
-  }
-  .leyenda .color {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    margin-right: 6px;
-  }
-  .leyenda .linea {
-    width: 14px;
-    height: 3px;
-    border-radius: 2px;
-    margin-right: 6px;
-  }
-</style>
+    header {
+      background: #26689c;
+      color: white;
+      padding: 0.7rem 1rem;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    header p {
+      margin: 0.1rem 0 0;
+      font-size: 0.85rem;
+      opacity: 0.9;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .layout {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 0.8rem 1rem 1rem;
+    }
+
+    .map-card {
+      flex: 2 1 60%;
+      min-width: 300px;
+    }
+
+    .side-card {
+      flex: 1 1 30%;
+      min-width: 260px;
+    }
+
+    #map {
+      width: 100%;
+      height: 480px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1rem;
+    }
+
+    .filtros label {
+      display: block;
+      font-size: 0.85rem;
+      margin-top: 0.4rem;
+      margin-bottom: 0.15rem;
+      font-weight: 600;
+    }
+
+    .filtros select {
+      width: 100%;
+      padding: 0.3rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+      box-sizing: border-box;
+    }
+
+    .stats {
+      margin-top: 0.8rem;
+      font-size: 0.9rem;
+    }
+
+    .stats p {
+      margin: 0.2rem 0;
+    }
+
+    .stats strong {
+      font-weight: 600;
+    }
+
+    .leyenda {
+      margin-top: 0.6rem;
+      font-size: 0.85rem;
+      background: #f7f9ff;
+      border-radius: 6px;
+      padding: 0.5rem 0.7rem;
+      border: 1px solid #dde5ff;
+      display: inline-block;
+    }
+
+    .leyenda-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.2rem;
+    }
+
+    .leyenda-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.4rem;
+      border: 1px solid #555;
+    }
+
+    .leyenda-linea {
+      width: 14px;
+      height: 3px;
+      margin-right: 0.4rem;
+      background: #007bff;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: white;
+      margin-left: 0.3rem;
+    }
+
+    .bajo  { background: #2ecc71; }
+    .medio { background: #f39c12; }
+    .alto  { background: #e74c3c; }
+
+    @media (max-width: 900px) {
+      #map {
+        height: 400px;
+      }
+    }
+  </style>
 </head>
 <body>
-
 <header>
-  Mapa de reportes validados de ciclovías
-  <small>Se muestran solo los reportes <b>aprobados</b> por el administrador.</small>
+  <h1>Mapa de reportes validados de ciclovías</h1>
+  <p>Se muestran solo los reportes <strong>aprobados</strong> por el administrador.</p>
 </header>
 
-<div id="map"></div>
+<main>
+  <div class="layout">
+    <section class="card map-card">
+      <div id="map"></div>
 
-<div class="leyenda">
-  <h3>Leyenda</h3>
-  <div class="item">
-    <span class="color" style="background: green;"></span> Problema gravedad baja
-  </div>
-  <div class="item">
-    <span class="color" style="background: orange;"></span> Problema gravedad media
-  </div>
-  <div class="item">
-    <span class="color" style="background: red;"></span> Problema gravedad alta
-  </div>
-  <div class="item">
-    <span class="linea" style="background:#0077ff;"></span> Ruta declarada por la persona
-  </div>
-</div>
+      <div class="leyenda">
+        <strong>Leyenda</strong>
+        <div class="leyenda-item">
+          <span class="leyenda-color" style="background:#2ecc71;"></span> Problema gravedad baja
+        </div>
+        <div class="leyenda-item">
+          <span class="leyenda-color" style="background:#f39c12;"></span> Problema gravedad media
+        </div>
+        <div class="leyenda-item">
+          <span class="leyenda-color" style="background:#e74c3c;"></span> Problema gravedad alta
+        </div>
+        <div class="leyenda-item">
+          <span class="leyenda-linea"></span> Ruta declarada por la persona
+        </div>
+      </div>
+    </section>
 
-<!-- Leaflet -->
+    <aside class="card side-card">
+      <h2>Filtros y resumen</h2>
+
+      <div class="filtros">
+        <label for="filtroRegion">Región</label>
+        <select id="filtroRegion">
+          <option value="">Todas las regiones</option>
+        </select>
+
+        <label for="filtroCiudad">Ciudad / comuna</label>
+        <select id="filtroCiudad">
+          <option value="">Todas las ciudades</option>
+        </select>
+      </div>
+
+      <div class="stats">
+        <p><strong>Reportes mostrados:</strong> <span id="statTotal">0</span></p>
+        <p>
+          <strong>Gravedad baja:</strong> <span id="statBaja">0</span>
+          <span class="badge bajo">Baja</span>
+        </p>
+        <p>
+          <strong>Gravedad media:</strong> <span id="statMedia">0</span>
+          <span class="badge medio">Media</span>
+        </p>
+        <p>
+          <strong>Gravedad alta:</strong> <span id="statAlta">0</span>
+          <span class="badge alto">Alta</span>
+        </p>
+      </div>
+
+      <p style="font-size:0.8rem; margin-top:0.8rem; color:#666;">
+        Los filtros aplican solo a los reportes validados. Puedes usarlos para
+        revisar situaciones particulares en una región o ciudad específica.
+      </p>
+    </aside>
+  </div>
+</main>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <!-- Firebase -->
@@ -99,87 +228,230 @@
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
 <script>
-// =======================
-//  CONFIG FIREBASE
-// =======================
-const firebaseConfig = {
-  apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
-  authDomain: "ciclovias-3d361.firebaseapp.com",
-  projectId: "ciclovias-3d361",
-  storageBucket: "ciclovias-3d361.appspot.com",
-  messagingSenderId: "94373830982",
-  appId: "1:94373830982:web:afbf251bfc78b9c7744547"
-};
+  /* ============================
+      CONFIGURACIÓN FIREBASE
+  ============================ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBQxsnjOfPRs7dq7YPpEScStSuQshW9YgU8",
+    authDomain: "ciclovias-3d361.firebaseapp.com",
+    projectId: "ciclovias-3d361",
+    storageBucket: "ciclovias-3d361.appspot.com",
+    messagingSenderId: "94373830982",
+    appId: "1:94373830982:web:afbf251bfc78b9c7744547"
+  };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-// =======================
-//  MAPA
-// =======================
-const map = L.map("map").setView([-37.47, -72.35], 13);
+  /* ============================
+      MAPA
+  ============================ */
+  const map = L.map('map').setView([-36.5, -71], 5.2);
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 19
-}).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
 
-const colores = {
-  "Bajo": "green",
-  "Medio": "orange",
-  "Alto": "red"
-};
+  const capaRutas  = L.featureGroup().addTo(map);
+  const capaPuntos = L.featureGroup().addTo(map);
 
-const grupoElementos = L.featureGroup().addTo(map);
+  /* ============================
+      DOM ELEMENTOS
+  ============================ */
+  const filtroRegion = document.getElementById('filtroRegion');
+  const filtroCiudad = document.getElementById('filtroCiudad');
 
-// =======================
-// Cargar reportes aprobados
-// =======================
-db.collection("reportes")
-  .where("estado", "==", "aprobado")
-  .onSnapshot((query) => {
-    grupoElementos.clearLayers();
+  const statTotal = document.getElementById('statTotal');
+  const statBaja  = document.getElementById('statBaja');
+  const statMedia = document.getElementById('statMedia');
+  const statAlta  = document.getElementById('statAlta');
 
-    query.forEach((doc) => {
-      const data = doc.data();
+  /* ============================
+      DATOS EN MEMORIA
+  ============================ */
+  let reportes = []; // todos los aprobados
+
+  /* ============================
+      UTILIDAD: ESTILO MARCADORES
+  ============================ */
+  function colorPorGravedad(gravedad) {
+    if (!gravedad) return '#777';
+    const g = gravedad.toLowerCase();
+    if (g === 'bajo' || g === 'baja') return '#2ecc71';
+    if (g === 'medio' || g === 'media') return '#f39c12';
+    if (g === 'alto' || g === 'alta') return '#e74c3c';
+    return '#777';
+  }
+
+  /* ============================
+      RENDERIZAR MAPA SEGÚN FILTRO
+  ============================ */
+  function renderMapa() {
+    capaRutas.clearLayers();
+    capaPuntos.clearLayers();
+
+    const regionSel = filtroRegion.value || "";
+    const ciudadSel = filtroCiudad.value || "";
+
+    let total = 0, baja = 0, media = 0, alta = 0;
+    const bounds = [];
+
+    reportes.forEach(rep => {
+      if (regionSel && rep.region !== regionSel) return;
+      if (ciudadSel && rep.ciudad !== ciudadSel) return;
+
+      const lat = rep.latProblema;
+      const lng = rep.lngProblema;
+      if (typeof lat !== 'number' || typeof lng !== 'number') return;
+
+      total++;
+      const g = (rep.gravedad || "").toLowerCase();
+      if (g === 'bajo' || g === 'baja') baja++;
+      else if (g === 'medio' || g === 'media') media++;
+      else if (g === 'alto' || g === 'alta') alta++;
+
+      const color = colorPorGravedad(rep.gravedad);
 
       // Punto
-      const punto = L.circleMarker([data.latProblema, data.lngProblema], {
-        radius: 8,
-        color: colores[data.gravedad] || "blue",
-        fillColor: colores[data.gravedad] || "blue",
+      const marker = L.circleMarker([lat, lng], {
+        radius: 7,
+        color: '#333',
+        weight: 1,
+        fillColor: color,
         fillOpacity: 0.9
-      });
+      }).addTo(capaPuntos);
 
-      const foto = data.fotoURL
-        ? `<a href="${data.fotoURL}" target="_blank">Ver foto</a>`
-        : "No enviada";
+      const popupHtml = `
+        <strong>${rep.problema || "Problema no especificado"}</strong><br/>
+        Gravedad: <em>${rep.gravedad || "Sin dato"}</em><br/>
+        Presencia de ciclovía: <em>${rep.presencia || "Sin dato"}</em><br/>
+        Región: <em>${rep.region || "Sin dato"}</em><br/>
+        Ciudad/comuna: <em>${rep.ciudad || "Sin dato"}</em><br/>
+        Coordenadas: ${lat.toFixed(5)}, ${lng.toFixed(5)}<br/>
+        Comentario: ${rep.comentario || "Sin comentario"}<br/>
+        ${rep.linkFoto ? `<a href="${rep.linkFoto}" target="_blank">Ver fotografía</a>` : ""}
+      `;
 
-      punto.bindPopup(`
-        <b>Problema:</b> ${data.problema}<br>
-        <b>Gravedad:</b> ${data.gravedad}<br>
-        <b>Comentario:</b> ${data.comentario || "Sin comentario"}<br>
-        <b>Coordenadas:</b> ${data.latProblema.toFixed(4)}, ${data.lngProblema.toFixed(4)}<br>
-        <b>Foto:</b> ${foto}
-      `);
+      marker.bindPopup(popupHtml);
 
-      punto.addTo(grupoElementos);
-
-      // Ruta
-      try {
-        const rutaJSON = JSON.parse(data.rutaGeoJSON);
-        const ruta = L.geoJSON(rutaJSON, {
-          style: { color: "#0077ff", weight: 3 }
-        });
-        ruta.addTo(grupoElementos);
-      } catch (e) {
-        console.warn("Ruta inválida en reporte", doc.id);
+      // Ruta (si existe)
+      if (rep.rutaGeoJSON) {
+        try {
+          const geo = JSON.parse(rep.rutaGeoJSON);
+          const linea = L.geoJSON(geo, {
+            style: { color: '#007bff', weight: 4 }
+          }).addTo(capaRutas);
+          if (linea.getBounds) {
+            bounds.push(linea.getBounds());
+          }
+        } catch (e) {
+          console.warn("Error al leer rutaGeoJSON de un reporte:", e);
+        }
       }
+
+      bounds.push(L.latLng(lat, lng));
     });
 
-    if (grupoElementos.getLayers().length > 0) {
-      map.fitBounds(grupoElementos.getBounds(), { padding: [30, 30] });
+    // Actualizar estadísticas
+    statTotal.textContent = total;
+    statBaja.textContent  = baja;
+    statMedia.textContent = media;
+    statAlta.textContent  = alta;
+
+    // Ajustar vista
+    if (bounds.length > 0) {
+      const mixBounds = bounds.reduce((acc, b) => {
+        if (b instanceof L.LatLngBounds) return acc.extend(b);
+        return acc.extend(b);
+      }, L.latLngBounds(bounds[0], bounds[0]));
+      map.fitBounds(mixBounds, { padding: [30, 30] });
+    } else {
+      map.setView([-36.5, -71], 5.2);
     }
+  }
+
+  /* ============================
+      POBLAR FILTROS
+  ============================ */
+  function poblarFiltros() {
+    const regiones = new Set();
+    const ciudadesPorRegion = {};
+
+    reportes.forEach(r => {
+      if (!r.region) return;
+      regiones.add(r.region);
+      if (!ciudadesPorRegion[r.region]) ciudadesPorRegion[r.region] = new Set();
+      if (r.ciudad) ciudadesPorRegion[r.region].add(r.ciudad);
+    });
+
+    // Región
+    const regionActual = filtroRegion.value || "";
+    filtroRegion.innerHTML = '<option value="">Todas las regiones</option>';
+    Array.from(regiones).sort().forEach(reg => {
+      const opt = document.createElement('option');
+      opt.value = reg;
+      opt.textContent = reg;
+      filtroRegion.appendChild(opt);
+    });
+    if (regionActual) filtroRegion.value = regionActual;
+
+    // Ciudad según región seleccionada
+    poblarCiudades(ciudadesPorRegion);
+  }
+
+  function poblarCiudades(ciudadesPorRegion) {
+    const regionSel = filtroRegion.value || "";
+    const ciudadActual = filtroCiudad.value || "";
+
+    filtroCiudad.innerHTML = '<option value="">Todas las ciudades</option>';
+
+    if (!regionSel || !ciudadesPorRegion[regionSel]) return;
+
+    Array.from(ciudadesPorRegion[regionSel]).sort().forEach(ci => {
+      const opt = document.createElement('option');
+      opt.value = ci;
+      opt.textContent = ci;
+      filtroCiudad.appendChild(opt);
+    });
+
+    if (ciudadActual) filtroCiudad.value = ciudadActual;
+  }
+
+  filtroRegion.addEventListener('change', () => {
+    // Rehacer ciudades y refrescar mapa
+    poblarFiltros(); // vuelve a construir ciudades con la nueva región
+    renderMapa();
   });
+
+  filtroCiudad.addEventListener('change', () => {
+    renderMapa();
+  });
+
+  /* ============================
+      LEER DATOS DE FIRESTORE
+  ============================ */
+  db.collection("reportes")
+    .where("estado", "==", "aprobado")
+    .orderBy("timestamp", "desc")
+    .onSnapshot((snapshot) => {
+      reportes = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        // Normalizamos lat/lng a número por si vienen como string
+        if (typeof data.latProblema === 'string') data.latProblema = parseFloat(data.latProblema);
+        if (typeof data.lngProblema === 'string') data.lngProblema = parseFloat(data.lngProblema);
+        reportes.push({
+          id: doc.id,
+          ...data
+        });
+      });
+
+      poblarFiltros();
+      renderMapa();
+    }, (err) => {
+      console.error("Error escuchando reportes:", err);
+    });
 </script>
 </body>
 </html>
+
