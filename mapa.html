@@ -8,13 +8,83 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <style>
-  body { margin: 0; }
-  #map { width: 100%; height: 100vh; }
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+  }
+  header {
+    background: #26689c;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+  }
+  header small {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.9;
+  }
+  #map {
+    width: 100%;
+    height: calc(100vh - 52px); /* alto total menos el header */
+  }
+  .leyenda {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    z-index: 1000;
+    background: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    font-size: 0.8rem;
+  }
+  .leyenda h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.9rem;
+  }
+  .leyenda .item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.15rem;
+  }
+  .leyenda .color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .leyenda .linea {
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    margin-right: 6px;
+  }
 </style>
 </head>
 <body>
 
+<header>
+  Mapa de reportes validados de ciclovías
+  <small>Se muestran solo los reportes <b>aprobados</b> por el administrador.</small>
+</header>
+
 <div id="map"></div>
+
+<div class="leyenda">
+  <h3>Leyenda</h3>
+  <div class="item">
+    <span class="color" style="background: green;"></span> Problema gravedad baja
+  </div>
+  <div class="item">
+    <span class="color" style="background: orange;"></span> Problema gravedad media
+  </div>
+  <div class="item">
+    <span class="color" style="background: red;"></span> Problema gravedad alta
+  </div>
+  <div class="item">
+    <span class="linea" style="background:#0077ff;"></span> Ruta declarada por la persona
+  </div>
+</div>
 
 <!-- Leaflet -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -42,7 +112,7 @@ const db = firebase.firestore();
 // =======================
 //  MAPA
 // =======================
-const map = L.map("map").setView([-33.45, -70.66], 12);
+const map = L.map("map").setView([-37.47, -72.35], 13); // ajusta si quieres otro centro
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19
@@ -55,12 +125,17 @@ const colores = {
   "Alto": "red"
 };
 
+// Capa para ajustar el zoom a todo
+const grupoElementos = L.featureGroup().addTo(map);
+
 // =======================
 // Cargar reportes aprobados
 // =======================
 db.collection("reportes")
   .where("estado", "==", "aprobado")
   .onSnapshot((query) => {
+    grupoElementos.clearLayers(); // por si cambias estados en vivo
+
     query.forEach((doc) => {
       const data = doc.data();
 
@@ -70,9 +145,11 @@ db.collection("reportes")
         color: colores[data.gravedad] || "blue",
         fillColor: colores[data.gravedad] || "blue",
         fillOpacity: 0.9
-      }).addTo(map);
+      });
 
-      const foto = data.fotoURL ? `<a href="${data.fotoURL}" target="_blank">Ver foto</a>` : "No enviada";
+      const foto = data.fotoURL
+        ? `<a href="${data.fotoURL}" target="_blank">Ver foto</a>`
+        : "No enviada";
 
       punto.bindPopup(`
         <b>Problema:</b> ${data.problema}<br>
@@ -82,18 +159,27 @@ db.collection("reportes")
         <b>Foto:</b> ${foto}
       `);
 
+      punto.addTo(grupoElementos);
+
       // ---- Ruta en GeoJSON ----
       try {
         const rutaJSON = JSON.parse(data.rutaGeoJSON);
-        L.geoJSON(rutaJSON, {
+        const ruta = L.geoJSON(rutaJSON, {
           style: { color: "#0077ff", weight: 3 }
-        }).addTo(map);
+        });
+        ruta.addTo(grupoElementos);
       } catch (e) {
         console.warn("Ruta inválida en reporte", doc.id);
       }
     });
+
+    // Ajustar el zoom a todo lo dibujado
+    if (grupoElementos.getLayers().length > 0) {
+      map.fitBounds(grupoElementos.getBounds(), { padding: [30, 30] });
+    }
   });
 
 </script>
 </body>
 </html>
+
