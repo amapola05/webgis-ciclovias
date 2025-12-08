@@ -18,7 +18,7 @@
       margin: 0;
     }
     main {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 1rem;
     }
@@ -67,7 +67,7 @@
       color: white;
     }
     .pendiente { background: #f0ad4e; }
-    .aprobado { background: #5cb85c; }
+    .aprobado  { background: #5cb85c; }
     .rechazado { background: #d9534f; }
     .nota {
       font-size: 0.85rem;
@@ -87,7 +87,7 @@
 <main>
   <p class="nota">
     Aquí puedes revisar los reportes enviados por la comunidad y aprobarlos o rechazarlos.
-    Solo los aprobados aparecerán en el mapa final.
+    Solo los <strong>aprobados</strong> aparecerán en el mapa público.
   </p>
 
   <table>
@@ -96,9 +96,9 @@
         <th>Problema</th>
         <th>Presencia</th>
         <th>Gravedad</th>
-        <th>Coordenadas</th>
         <th>Ciudad</th>
         <th>Región</th>
+        <th>Coordenadas</th>
         <th>Comentario</th>
         <th>Foto</th>
         <th>Estado</th>
@@ -129,19 +129,29 @@
 
   const tabla = document.getElementById("tablaReportes");
 
+  function numToFixedOrDash(v) {
+    if (typeof v === "number" && !isNaN(v)) {
+      return v.toFixed(4);
+    }
+    const n = parseFloat(v);
+    if (!isNaN(n)) return n.toFixed(4);
+    return "-";
+  }
+
   function crearFila(id, data) {
     const fila = document.createElement("tr");
     const estado = data.estado || "pendiente";
 
-    const lat = data.latProblema != null ? data.latProblema.toFixed(4) : "-";
-    const lng = data.lngProblema != null ? data.lngProblema.toFixed(4) : "-";
+    const lat = numToFixedOrDash(data.latProblema);
+    const lng = numToFixedOrDash(data.lngProblema);
 
     const ciudad = data.ciudad || "-";
     const region = data.region || "-";
 
     let fotoTexto = "No enviada";
-    if (data.fotoLink && data.fotoLink.trim() !== "") {
-      fotoTexto = `<a class="foto-link" href="${data.fotoLink}" target="_blank">Ver foto</a>`;
+    const link = data.linkFoto || data.fotoLink || data.fotoURL;
+    if (link && String(link).trim() !== "") {
+      fotoTexto = `<a class="foto-link" href="${link}" target="_blank">Ver foto</a>`;
     }
 
     fila.dataset.id = id;
@@ -149,9 +159,9 @@
       <td>${data.problema || "-"}</td>
       <td>${data.presencia || "-"}</td>
       <td>${data.gravedad || "-"}</td>
-      <td>${lat},<br>${lng}</td>
       <td>${ciudad}</td>
       <td>${region}</td>
+      <td>${lat},<br>${lng}</td>
       <td>${data.comentario || "Sin comentario"}</td>
       <td>${fotoTexto}</td>
       <td><span class="estado-tag ${estado}">${estado}</span></td>
@@ -163,27 +173,17 @@
     return fila;
   }
 
-  // ESCUCHAR CAMBIOS EN FIRESTORE
+  // Escuchar SIEMPRE toda la colección y redibujar la tabla
   db.collection("reportes")
     .orderBy("timestamp", "desc")
     .onSnapshot((snapshot) => {
-      snapshot.docChanges().forEach((cambio) => {
-        const doc = cambio.doc;
+      // limpiar tabla
+      tabla.innerHTML = "";
+      snapshot.forEach((doc) => {
         const data = doc.data();
         const id = doc.id;
-
-        if (cambio.type === "added") {
-          const fila = crearFila(id, data);
-          tabla.appendChild(fila);
-        }
-
-        if (cambio.type === "modified") {
-          const filaVieja = tabla.querySelector(\`tr[data-id="\${id}"]\`);
-          if (filaVieja) {
-            const filaNueva = crearFila(id, data);
-            tabla.replaceChild(filaNueva, filaVieja);
-          }
-        }
+        const fila = crearFila(id, data);
+        tabla.appendChild(fila);
       });
     });
 
