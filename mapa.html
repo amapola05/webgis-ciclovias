@@ -123,11 +123,14 @@
     .c-azul     { background: #007bff; }
 
     /* Área del gráfico */
-    #graficoProblemas {
-      width: 100%;
-      max-width: 100%;
-      margin-top: 0.8rem;
-    }
+#graficoProblemas {
+  width: 100%;
+  max-width: 100%;
+  height: 200px;      /* <<< ALTO FIJO DEL GRÁFICO */
+  max-height: 220px;  /* por si acaso */
+  margin-top: 0.8rem;
+}
+
 
     @media (max-width: 900px) {
       .layout {
