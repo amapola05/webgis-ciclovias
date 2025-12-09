@@ -12,6 +12,9 @@
   />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Chart.js para el gráfico -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -114,10 +117,17 @@
       height: 10px;
       border-radius: 50%;
     }
-    .c-verde  { background: #3cb44b; }
+    .c-verde    { background: #3cb44b; }
     .c-amarillo { background: #f0ad4e; }
-    .c-rojo   { background: #d9534f; }
-    .c-azul   { background: #007bff; }
+    .c-rojo     { background: #d9534f; }
+    .c-azul     { background: #007bff; }
+
+    /* Área del gráfico */
+    #graficoProblemas {
+      width: 100%;
+      max-width: 100%;
+      margin-top: 0.8rem;
+    }
 
     @media (max-width: 900px) {
       .layout {
@@ -199,6 +209,12 @@
           <span id="problemaFrecuente">Sin datos</span>
         </p>
 
+        <!-- Gráfico de distribución de problemas -->
+        <div style="margin-top:1rem;">
+          <strong>Distribución de problemas reportados</strong>
+          <canvas id="graficoProblemas"></canvas>
+        </div>
+
         <p style="font-size:0.8rem; color:#555; margin-top:0.8rem;">
           Los filtros aplican solo a los reportes validados. Puedes usarlos para revisar
           situaciones particulares en una región o ciudad específica.
@@ -259,6 +275,10 @@
     const altaSpan      = document.getElementById("countAlta");
     const problemaSpan  = document.getElementById("problemaFrecuente");
 
+    // Referencia al canvas del gráfico
+    const ctxGrafico = document.getElementById("graficoProblemas").getContext("2d");
+    let problemaChart = null;
+
     filtroRegion.addEventListener("change", aplicarFiltros);
     filtroCiudad.addEventListener("change", aplicarFiltros);
 
@@ -303,6 +323,62 @@
         opt.textContent = ciu;
         filtroCiudad.appendChild(opt);
       });
+    }
+
+    // Actualiza o crea el gráfico de barras según el conteo de problemas
+    function actualizarGraficoProblemas(conteoProblemas) {
+      const etiquetas = Object.keys(conteoProblemas);
+      const datos = Object.values(conteoProblemas);
+
+      // Si no hay datos, mostramos un gráfico vacío
+      if (etiquetas.length === 0) {
+        if (problemaChart) {
+          problemaChart.data.labels = [];
+          problemaChart.data.datasets[0].data = [];
+          problemaChart.update();
+        }
+        return;
+      }
+
+      if (!problemaChart) {
+        problemaChart = new Chart(ctxGrafico, {
+          type: "bar",
+          data: {
+            labels: etiquetas,
+            datasets: [{
+              label: "Número de reportes",
+              data: datos,
+              backgroundColor: "#26689c"
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                callbacks: {
+                  label: (context) => ` ${context.parsed.y} reporte(s)`
+                }
+              }
+            }
+          }
+        });
+      } else {
+        problemaChart.data.labels = etiquetas;
+        problemaChart.data.datasets[0].data = datos;
+        problemaChart.update();
+      }
     }
 
     function aplicarFiltros() {
@@ -401,6 +477,9 @@
         }
         problemaSpan.textContent = `${problemaMax} (${max} reporte${max > 1 ? "s" : ""})`;
       }
+
+      // Actualizar gráfico con el mismo conteo de problemas
+      actualizarGraficoProblemas(conteoProblemas);
     }
   </script>
 </body>
